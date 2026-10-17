@@ -436,7 +436,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .dial-pill { background: #0b0c0f !important; color: #f2f2ee !important; border: 1px solid #4a4e56; border-radius: 6px; box-shadow: inset 0 0 0 3px #0b0c0f, inset 0 0 0 4px #272a30, 0 1px 0 rgba(255,255,255,.55), 0 4px 10px rgba(0,0,0,.25); }
 .round[hidden], .sw-btn[hidden] { display: none; }
 /* ---- compact timer layout ---- */
-#v-dial .dial, .dial { width: min(100%, 400px, 44vh); }
+#v-dial .dial, .dial { width: min(100%, 400px, 52vh); }
 .dial-title { min-height: 36px; }
 .dial-sub { min-height: 16px; }
 .dial-pill { margin-top: 12px; padding: 4px 26px; font-size: 34px; }
@@ -445,7 +445,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .chip b { font-family: var(--fd); font-size: 22px; font-weight: 600; letter-spacing: .02em; line-height: 1; }
 .chip small { font-family: var(--fd); font-size: 9px; letter-spacing: .2em; color: #8b9099; line-height: 1; }
 .chip[aria-pressed="true"] small { color: var(--accent); }
-.dial-ctrl { margin-top: 10px; }
+.dial-ctrl { margin-top: 18px; }
 /* ---- timer dial: seconds track and hand, keypad ---- */
 #d-svg .brand-mark { font-size: 32px; }
 .dial .dt1, .dial .dt2, .dial .dt3, .dial .drail { fill: none; }
@@ -519,7 +519,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <div class="dial-sub" id="d-sub"></div>
     <svg class="dial idle" id="d-svg" viewBox="0 0 400 400" role="slider" tabindex="0" aria-label="Durée en minutes" aria-valuemin="1" aria-valuemax="60" aria-valuenow="45"></svg>
     <button type="button" class="dial-pill num" id="d-pill" aria-label="Saisir la durée au pavé numérique">45 : 00</button>
-    <div class="chips" id="d-chips"></div>
     <div class="dial-ctrl">
       <button class="round sm" type="button" id="d-reset" aria-label="Réinitialiser" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v4.5h4.5"/></svg></button>
       <button class="round" type="button" id="d-toggle" aria-label="Démarrer"><svg id="d-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
@@ -1101,7 +1100,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (!v) { var old = parseInt(load('tempo.dial', 45), 10); v = (old >= 1 && old <= 60 ? old : 45) * 60; }
     dial.sec = Math.min(5999, Math.max(1, v)); dial.rem = dial.sec * 1000;
   })();
-  var PRESETS = [5, 10, 15, 20, 30, 45, 60];
   function polar(r, m) { var a = m * 6 * Math.PI / 180; return [200 - r * Math.sin(a), 200 - r * Math.cos(a)]; }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function dialLabel(sec) { var m = Math.floor(sec / 60), r = sec % 60; return r ? m + ' min ' + r + ' s' : m + ' min'; }
@@ -1129,12 +1127,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     s += '<g id="d-sec"><line class="d-sec-out" x1="200" y1="224" x2="200" y2="64"/><line class="d-sec" x1="200" y1="224" x2="200" y2="64"/></g>';
     s += '<circle class="hub" cx="200" cy="200" r="13"/><circle class="pin" cx="200" cy="200" r="4"/>';
     dsvg.innerHTML = s;
-    var chips = $('#d-chips'); chips.textContent = '';
-    PRESETS.forEach(function (n) {
-      var b = el('button', 'chip'); b.type = 'button'; b.dataset.m = String(n); b.innerHTML = '<b>' + n + '</b><small>MIN</small>'; b.setAttribute('aria-label', n + ' minutes');
-      b.addEventListener('click', function () { if (dial.state !== 'idle') dialReset(); setDialSec(n * 60); });
-      chips.appendChild(b);
-    });
   }
   function renderDial() {
     var r = Math.max(0, Math.min(60, dial.rem / 60000));
@@ -1156,7 +1148,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#d-title').textContent = 'Minuteur ' + dialLabel(dial.sec);
     dsvg.setAttribute('aria-valuenow', String(Math.round(dial.sec / 60)));
     dsvg.classList.toggle('idle', dial.state === 'idle');
-    $$('#d-chips .chip').forEach(function (c) { c.setAttribute('aria-pressed', String(Number(c.dataset.m) * 60) === String(dial.sec) ? 'true' : 'false'); });
     var running = dial.state === 'running';
     $('#d-ico').innerHTML = running ? ICO_PAUSE : ICO_PLAY;
     $('#d-toggle').setAttribute('aria-label', running ? 'Pause' : (dial.state === 'paused' ? 'Reprendre' : 'Démarrer'));
