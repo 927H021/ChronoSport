@@ -355,6 +355,32 @@ select { border-radius: 6px; color: var(--accent); }
 .r-modal .box { border-radius: 10px; }
 .r-modal .btns .btn { font-family: var(--f); text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 17px; border: 0; background: none; color: #ff8a4c; }
 .toast { border-radius: 6px; }
+.r-center { gap: 14px; }
+.ring { width: min(78vw, 38vh, 340px); }
+.ring .ring-over { position: absolute; inset: 0; transform: none; pointer-events: none; }
+.ring .rail { fill: none; stroke: rgba(255,255,255,.3); stroke-width: .8; }
+.ring .t1, .ring .t2, .ring .t3 { fill: none; }
+.ring .t1 { stroke: rgba(255,255,255,.3); stroke-width: .9; }
+.ring .t2 { stroke: rgba(255,255,255,.6); stroke-width: 1.3; }
+.ring .t3 { stroke: #fff; stroke-width: 2.4; }
+.ring .mark { fill: var(--ph); stroke: #07080a; stroke-width: 1; stroke-linejoin: round; }
+#r-count { font-size: clamp(64px, 22vw, 112px); }
+.r-sub { display: flex; gap: 12px; justify-content: center; align-items: center; }
+.sub svg { display: block; width: clamp(76px, 24vw, 100px); height: auto; }
+.sub .s-face { fill: #0b0c0f; stroke: #2a2d33; stroke-width: 1.5; }
+.sub.active .s-face { stroke: var(--ph); }
+.sub .s-tick { stroke: rgba(255,255,255,.3); stroke-width: 1.2; }
+.sub .s-tick.on { stroke: var(--ph); stroke-width: 2; }
+.sub .s-hand { stroke: #eceee8; stroke-width: 2; stroke-linecap: round; }
+.sub .s-pin { fill: var(--ph); }
+.sub .s-lbl { fill: rgba(235,235,245,.6); font: 600 8.5px var(--fd); letter-spacing: .14em; text-anchor: middle; }
+.sub .s-val { fill: #fff; font: 600 17px var(--fd); letter-spacing: .04em; text-anchor: middle; }
+@media (max-height: 640px) { .r-sub { display: none; } .ring { width: min(60vw, 56vh); } }
+.sw-dial .tick { display: none; }
+.sw-dial .rail { fill: none; stroke: var(--muted); stroke-width: .8; }
+.sw-dial .t1 { fill: none; stroke: var(--muted); stroke-width: .9; }
+.sw-dial .t2 { fill: none; stroke: var(--fg); stroke-width: 1.2; opacity: .7; }
+.sw-dial .t3 { fill: none; stroke: var(--fg); stroke-width: 2.6; }
 .brand { display: flex; align-items: center; gap: 10px; padding-top: 4px; color: var(--fg); }
 .brand svg { width: 34px; height: 34px; flex: none; }
 .brand-name { font-family: var(--fd); font-size: 22px; font-weight: 600; letter-spacing: .2em; line-height: 1; }
@@ -464,8 +490,10 @@ select { border-radius: 6px; color: var(--accent); }
   <div class="r-center">
     <div class="ring">
       <svg viewBox="0 0 240 240" aria-hidden="true"><circle class="track" cx="120" cy="120" r="112"/><circle class="prog" id="r-ring" cx="120" cy="120" r="112"/></svg>
+      <svg class="ring-over" viewBox="0 0 240 240" aria-hidden="true"><circle class="rail" cx="120" cy="120" r="96.3"/><circle class="rail" cx="120" cy="120" r="100.3"/><path class="t1" id="r-t1"/><path class="t2" id="r-t2"/><path class="t3" id="r-t3"/><g id="r-mark"><path class="mark" d="M120 29L113.5 14.5H126.5Z"/></g></svg>
       <div class="r-time"><div id="r-count" role="timer">0:00</div><div id="r-phase">Préparation</div></div>
     </div>
+    <div class="r-sub" id="r-sub"><div class="sub" id="sub-sets"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div><div class="sub" id="sub-prep"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div><div class="sub" id="sub-rest"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div></div>
     <div id="r-next"></div>
   </div>
   <div class="r-bottom">
@@ -739,7 +767,9 @@ select { border-radius: 6px; color: var(--accent); }
     $('#r-ico').innerHTML = ICO_PAUSE; $('#r-toggle').setAttribute('aria-label', 'Pause');
     $('#r-name').textContent = w.name;
     acquireWake();
+    buildSubs(w);
     enterSeg(0, 0);
+    drawSub(segs[0].dur * 1000);
     clearInterval(loop); loop = setInterval(tick, 100);
   }
   function enterSeg(i, carryMs) {
@@ -770,6 +800,8 @@ select { border-radius: 6px; color: var(--accent); }
     var s = run.segs[run.i];
     var sec = Math.ceil(remMs / 1000);
     $('#r-count').textContent = fmt(sec);
+    var mk = $('#r-mark'); if (mk) mk.setAttribute('transform', 'rotate(' + (((s.dur * 1000 - remMs) / 1000) % 60 * 6).toFixed(2) + ' 120 120)');
+    drawSub(remMs);
     var frac = Math.min(1, Math.max(0, remMs / (s.dur * 1000)));
     ring.style.strokeDashoffset = String(C * (1 - frac));
     var el_ = elapsedTotal();
@@ -803,6 +835,7 @@ select { border-radius: 6px; color: var(--accent); }
     run.finished = true; clearInterval(loop);
     $('#runner').dataset.phase = 'done';
     $('#r-count').textContent = '0:00'; ring.style.strokeDashoffset = String(C);
+    drawSub(0);
     $('#r-bar').style.width = '100%';
     tone(880, 250); tone(880, 250, 330); tone(1175, 600, 660); vibrate([300, 100, 300, 100, 500]);
     speak('Séance terminée');
@@ -1119,13 +1152,76 @@ select { border-radius: 6px; color: var(--accent); }
       major = m % 5 === 0; p1 = cw(146, m); p2 = cw(major ? 160 : 152, m);
       s += '<line class="tick' + (major ? ' major' : '') + '" x1="' + p1[0].toFixed(2) + '" y1="' + p1[1].toFixed(2) + '" x2="' + p2[0].toFixed(2) + '" y2="' + p2[1].toFixed(2) + '"/>';
     }
+    var d1 = '', d2 = '', d3 = '', k, aa, sn, cs, ri, ro, sg;
+    for (k = 0; k < 240; k++) {
+      aa = k * 1.5 * Math.PI / 180; sn = Math.sin(aa); cs = Math.cos(aa);
+      if (k % 20 === 0) { ri = 146; ro = 164; } else if (k % 4 === 0) { ri = 150; ro = 160; } else { ri = 154; ro = 160; }
+      sg = 'M' + (200 + ri * sn).toFixed(2) + ' ' + (200 - ri * cs).toFixed(2) + 'L' + (200 + ro * sn).toFixed(2) + ' ' + (200 - ro * cs).toFixed(2);
+      if (k % 20 === 0) d3 += sg; else if (k % 4 === 0) d2 += sg; else d1 += sg;
+    }
+    s += '<circle class="rail" cx="200" cy="200" r="154"/><circle class="rail" cx="200" cy="200" r="160"/><path class="t1" d="' + d1 + '"/><path class="t2" d="' + d2 + '"/><path class="t3" d="' + d3 + '"/>';
     for (m = 0; m < 60; m += 5) { p1 = cw(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
     s += '<g id="sw-hand"><line class="sw-hand-line" x1="200" y1="224" x2="200" y2="66"/><circle class="sw-hub" cx="200" cy="200" r="9"/><circle class="sw-pin" cx="200" cy="200" r="3"/></g>';
     $('#sw-svg').innerHTML = s;
   }
 
+  /* ---------- runner: railroad seconds track and chronograph subdials ---------- */
+  function buildRunnerTrack() {
+    var d1 = '', d2 = '', d3 = '', i, a, sn, cs, ri, ro, seg;
+    for (i = 0; i < 240; i++) {
+      a = i * 1.5 * Math.PI / 180; sn = Math.sin(a); cs = Math.cos(a);
+      if (i % 20 === 0) { ri = 89; ro = 102; } else if (i % 4 === 0) { ri = 93; ro = 101; } else { ri = 96.5; ro = 100; }
+      seg = 'M' + (120 + ri * sn).toFixed(2) + ' ' + (120 - ri * cs).toFixed(2) + 'L' + (120 + ro * sn).toFixed(2) + ' ' + (120 - ro * cs).toFixed(2);
+      if (i % 20 === 0) d3 += seg; else if (i % 4 === 0) d2 += seg; else d1 += seg;
+    }
+    $('#r-t1').setAttribute('d', d1); $('#r-t2').setAttribute('d', d2); $('#r-t3').setAttribute('d', d3);
+  }
+  var SUB = { lit: -1, total: 1, n: 1 };
+  function gauge(key, label, n, major) {
+    var s = '<circle class="s-face" cx="50" cy="50" r="46"/>';
+    for (var i = 0; i < n; i++) {
+      var a = i * 2 * Math.PI / n, rin = (major && i % major === 0) ? 33 : 37;
+      s += '<line class="s-tick" x1="' + (50 + rin * Math.sin(a)).toFixed(2) + '" y1="' + (50 - rin * Math.cos(a)).toFixed(2) + '" x2="' + (50 + 42 * Math.sin(a)).toFixed(2) + '" y2="' + (50 - 42 * Math.cos(a)).toFixed(2) + '"/>';
+    }
+    s += '<line class="s-hand" id="sh-' + key + '" x1="50" y1="56" x2="50" y2="17"/>';
+    s += '<text class="s-lbl" x="50" y="34">' + label + '</text><text class="s-val" id="sv-' + key + '" x="50" y="74">–</text>';
+    s += '<circle class="s-pin" cx="50" cy="50" r="3"/>';
+    return s;
+  }
+  function buildSubs(w) {
+    var total = w.sets * w.cycles;
+    SUB.total = total; SUB.n = total <= 24 ? total : 12; SUB.lit = -1;
+    $('#sub-sets svg').innerHTML = gauge('sets', 'SÉRIES', SUB.n, 0);
+    $('#sub-prep svg').innerHTML = gauge('prep', 'PRÉP.', 12, 3);
+    $('#sub-rest svg').innerHTML = gauge('rest', 'REPOS', 12, 3);
+  }
+  function rot(id, deg) { $('#' + id).setAttribute('transform', 'rotate(' + deg.toFixed(2) + ' 50 50)'); }
+  function drawSub(remMs) {
+    var s = run.segs[run.i], w = run.w;
+    var frac = Math.min(1, Math.max(0, 1 - remMs / (s.dur * 1000)));
+    var inSet = s.type === 'work' || s.type === 'rest' || s.type === 'between';
+    var idx = inSet ? (s.cycle - 1) * w.sets + s.set : (s.type === 'cool' ? SUB.total : 0);
+    var finished = s.type === 'work' ? idx - 1 + frac : idx;
+    rot('sh-sets', finished / SUB.total * 360);
+    $('#sv-sets').textContent = idx + '/' + SUB.total;
+    var lit = Math.floor(finished / SUB.total * SUB.n + 1e-6);
+    if (lit !== SUB.lit) {
+      SUB.lit = lit;
+      $$('#sub-sets .s-tick').forEach(function (t, i) { t.classList.toggle('on', i < lit); });
+    }
+    var rem = Math.ceil(remMs / 1000);
+    var isPrep = s.type === 'prep', isRest = s.type === 'rest';
+    rot('sh-prep', isPrep ? frac * 360 : 0);
+    $('#sv-prep').textContent = w.prep > 0 ? fmt(isPrep ? rem : w.prep) : '–';
+    rot('sh-rest', isRest ? frac * 360 : 0);
+    $('#sv-rest').textContent = w.rest > 0 ? fmt(isRest ? rem : w.rest) : '–';
+    $('#sub-sets').classList.toggle('active', inSet);
+    $('#sub-prep').classList.toggle('active', isPrep);
+    $('#sub-rest').classList.toggle('active', isRest);
+  }
+
   /* ---------- init ---------- */
-  applyTheme(); syncSettings(); renderHome(); renderHistory(); buildDial(); renderDial(); buildSWDial(); renderSW();
+  applyTheme(); syncSettings(); renderHome(); renderHistory(); buildDial(); renderDial(); buildSWDial(); renderSW(); buildRunnerTrack();
 })();
 </script>
 </body>
