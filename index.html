@@ -434,6 +434,18 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .chip[aria-pressed="true"] { background: #0b0c0f; color: var(--accent); border-color: #4a4e56;
   box-shadow: inset 0 0 0 2px #0b0c0f, inset 0 0 0 3px var(--accent), 0 0 12px rgba(255,106,26,.4), 0 1px 0 rgba(255,255,255,.55); }
 .dial-pill { background: #0b0c0f !important; color: #f2f2ee !important; border: 1px solid #4a4e56; border-radius: 6px; box-shadow: inset 0 0 0 3px #0b0c0f, inset 0 0 0 4px #272a30, 0 1px 0 rgba(255,255,255,.55), 0 4px 10px rgba(0,0,0,.25); }
+.round[hidden], .sw-btn[hidden] { display: none; }
+/* ---- compact timer layout ---- */
+#v-dial .dial, .dial { width: min(100%, 400px, 44vh); }
+.dial-title { min-height: 36px; }
+.dial-sub { min-height: 16px; }
+.dial-pill { margin-top: 12px; padding: 4px 26px; font-size: 34px; }
+.chips { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 14px auto 0; max-width: 400px; width: 100%; }
+.chip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 48px; padding: 0; border-radius: 5px; }
+.chip b { font-family: var(--fd); font-size: 22px; font-weight: 600; letter-spacing: .02em; line-height: 1; }
+.chip small { font-family: var(--fd); font-size: 9px; letter-spacing: .2em; color: #8b9099; line-height: 1; }
+.chip[aria-pressed="true"] small { color: var(--accent); }
+.dial-ctrl { margin-top: 10px; }
 /* ---- timer dial: seconds track and hand, keypad ---- */
 #d-svg .brand-mark { font-size: 32px; }
 .dial .dt1, .dial .dt2, .dial .dt3, .dial .drail { fill: none; }
@@ -1119,7 +1131,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     dsvg.innerHTML = s;
     var chips = $('#d-chips'); chips.textContent = '';
     PRESETS.forEach(function (n) {
-      var b = el('button', 'chip', n + ' min'); b.type = 'button'; b.dataset.m = String(n);
+      var b = el('button', 'chip'); b.type = 'button'; b.dataset.m = String(n); b.innerHTML = '<b>' + n + '</b><small>MIN</small>'; b.setAttribute('aria-label', n + ' minutes');
       b.addEventListener('click', function () { if (dial.state !== 'idle') dialReset(); setDialSec(n * 60); });
       chips.appendChild(b);
     });
@@ -1149,7 +1161,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#d-ico').innerHTML = running ? ICO_PAUSE : ICO_PLAY;
     $('#d-toggle').setAttribute('aria-label', running ? 'Pause' : (dial.state === 'paused' ? 'Reprendre' : 'Démarrer'));
     $('#d-reset').hidden = dial.state === 'idle';
-    $('#d-sub').textContent = { idle: 'Faites glisser le cadran ou touchez le temps', running: 'En cours', paused: 'En pause', done: 'Terminé' }[dial.state];
+    $('#d-sub').textContent = { idle: 'Glissez le cadran ou touchez le temps', running: 'En cours', paused: 'En pause', done: 'Terminé' }[dial.state];
   }
   function setDialSec(sec) {
     sec = Math.min(5999, Math.max(1, Math.round(sec)));
