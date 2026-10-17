@@ -408,12 +408,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .ring tspan.wm-c, .ring tspan.wm-s { stroke-width: 1.6; }
 .ring .r-brand { font-size: 21px; }
 
-#sw-svg .lc-face { fill: #0b0c0f; stroke: #2a2d33; stroke-width: 1.5; }
-#sw-svg .lc-tick { stroke: rgba(255,255,255,.4); stroke-width: 1.2; }
-#sw-svg .lc-hand { stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; }
-#sw-svg .lc-pin { fill: var(--accent); }
-#sw-svg .lc-lbl { fill: rgba(235,235,245,.6); font: 600 7px var(--fd); letter-spacing: .16em; text-anchor: middle; }
-#sw-svg .lc-val { fill: #fff; font: 600 15px var(--fd); text-anchor: middle; }
 /* ---- timer dial: seconds track and hand, keypad ---- */
 #d-svg .brand-mark { font-size: 32px; }
 .dial .dt1, .dial .dt2, .dial .dt3, .dial .drail { fill: none; }
@@ -1267,8 +1261,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var c = $('#sw-cur'); if (c) c.textContent = fmtSW(e - sw.lastLap);
   }
   function renderSW() {
-    var lc = $('#sw-lapcount'), lh = $('#sw-lc-hand');
-    if (lc) { lc.textContent = String(sw.laps.length); lh.setAttribute('transform', 'rotate(' + ((sw.laps.length % 12) * 30) + ' 200 278)'); }
+    var nl = sw.laps.length, lh = $('#sh-laps');
+    if (lh) {
+      rot('sh-laps', (nl % 12) * 30); $('#sv-laps').textContent = String(nl);
+      var on = nl === 0 ? 0 : (nl % 12 === 0 ? 12 : nl % 12);
+      $$('#sw-sub .s-tick').forEach(function (t, i) { t.classList.toggle('on', i < on); });
+    }
     var running = sw.state === 'running';
     var tg = $('#sw-toggle'), lp = $('#sw-lap');
     tg.textContent = running ? 'Arrêter' : (sw.state === 'paused' ? 'Reprendre' : 'Démarrer');
@@ -1349,10 +1347,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     s += '<circle class="rail" cx="200" cy="200" r="154"/><circle class="rail" cx="200" cy="200" r="160"/><path class="t1" d="' + d1 + '"/><path class="t2" d="' + d2 + '"/><path class="t3" d="' + d3 + '"/>';
     for (m = 0; m < 60; m += 5) { p1 = cw(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
     s += '<text class="brand-mark" x="200" y="118"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text>';
-    s += '<circle class="lc-face" cx="200" cy="278" r="32"/>';
-    for (k = 0; k < 12; k++) { aa = k * Math.PI / 6; s += '<line class="lc-tick" x1="' + (200 + 25 * Math.sin(aa)).toFixed(2) + '" y1="' + (278 - 25 * Math.cos(aa)).toFixed(2) + '" x2="' + (200 + 29.5 * Math.sin(aa)).toFixed(2) + '" y2="' + (278 - 29.5 * Math.cos(aa)).toFixed(2) + '"/>'; }
-    s += '<text class="lc-lbl" x="200" y="262">TOURS</text><text class="lc-val" id="sw-lapcount" x="200" y="285">0</text>';
-    s += '<line class="lc-hand" id="sw-lc-hand" x1="200" y1="278" x2="200" y2="251"/><circle class="lc-pin" cx="200" cy="278" r="2.5"/>';
+    s += '<g class="sub active" id="sw-sub" style="--ph:var(--accent)" transform="translate(166 244) scale(.68)">' + gauge('laps', 'TOURS', 12, 3) + '</g>';
     s += '<g id="sw-hand"><line class="sw-hand-line" x1="200" y1="224" x2="200" y2="66"/><circle class="sw-hub" cx="200" cy="200" r="9"/><circle class="sw-pin" cx="200" cy="200" r="3"/></g>';
     $('#sw-svg').innerHTML = s;
   }
