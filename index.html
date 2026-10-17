@@ -16,6 +16,7 @@
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 </style>
 <title>ChronoSport</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Yellowtail&display=swap">
@@ -408,6 +409,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .ring .r-brand { font-size: 21px; }
 
 /* ---- timer dial: seconds track and hand, keypad ---- */
+#d-svg .brand-mark { font-size: 32px; }
 .dial .dt1, .dial .dt2, .dial .dt3, .dial .drail { fill: none; }
 .dial .drail { stroke: rgba(255,255,255,.4); stroke-width: .8; }
 .dial .dt1 { stroke: rgba(255,255,255,.45); stroke-width: .9; }
@@ -1083,7 +1085,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       s += '<line class="tick' + (major ? ' major' : '') + '" x1="' + p1[0].toFixed(2) + '" y1="' + p1[1].toFixed(2) + '" x2="' + p2[0].toFixed(2) + '" y2="' + p2[1].toFixed(2) + '"/>';
     }
     for (m = 0; m < 60; m += 5) { p1 = polar(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
-    s += '<text class="brand-mark" x="200" y="108"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text>';
+    s += '<text class="brand-mark" x="200" y="146"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text>';
     s += '<line class="hand" id="d-hand" x1="200" y1="200" x2="200" y2="100"/>';
     s += '<g id="d-sec"><line class="d-sec-out" x1="200" y1="224" x2="200" y2="64"/><line class="d-sec" x1="200" y1="224" x2="200" y2="64"/></g>';
     s += '<circle class="hub" cx="200" cy="200" r="13"/><circle class="pin" cx="200" cy="200" r="4"/>';
