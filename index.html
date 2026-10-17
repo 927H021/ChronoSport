@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261017190253">
+<meta name="app-version" content="20261017194241">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -494,8 +494,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 /* ---- landscape (phone turned sideways): side rail, two-column screens, no scrolling ---- */
 @media (orientation: landscape) and (max-height: 520px) {
   body { flex-direction: row; }
-  .tabs { order: -1; flex-direction: column; box-sizing: content-box; width: 78px; flex: none; margin: 0 12px 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 4px 0 4px max(8px, env(safe-area-inset-left, 0px)); border-top: 0; border-right: 1px solid var(--line); box-shadow: none; }
-  .tabs button { flex: 1; min-height: 0; font-size: 11px; letter-spacing: .08em; box-shadow: none !important; }
+  .tabs { order: -1; flex-direction: column; box-sizing: content-box; width: 62px; flex: none; margin: 0 12px 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 4px 0 4px max(8px, env(safe-area-inset-left, 0px)); border-top: 0; border-right: 1px solid var(--line); box-shadow: none; }
+  .tabs button { flex: 1; min-height: 0; font-size: 9.5px; letter-spacing: .04em; box-shadow: none !important; }
   .tabs button[aria-current="page"] { box-shadow: inset 3px 0 0 var(--accent) !important; }
   .tabs button svg { width: 22px; height: 22px; }
   .views { padding-right: 4px; }
@@ -530,6 +530,31 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   .r-controls button.main { width: 72px; height: 72px; }
   #r-count { font-size: clamp(40px, 11vh, 64px); }
 
+  /* maximum dial size: mode switch and titles move beside the dial */
+  #v-dial { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 22px; align-content: center; justify-items: center; align-items: center; padding-block: 4px; }
+  #d-timer:not([hidden]), #d-stopwatch:not([hidden]) { display: contents; }
+  #d-timer[hidden], #d-stopwatch[hidden] { display: none; }
+  #d-title { grid-row: 2; } #d-sub { grid-row: 3; } #d-pill { grid-row: 4; } #d-timer .dial-ctrl { grid-row: 5; }
+  #sw-time { grid-row: 2; } #d-stopwatch .sw-ctrl { grid-row: 3; } #sw-laps { grid-row: 4; }
+  .dial-pill { white-space: nowrap; font-size: 32px; padding: 4px 18px; letter-spacing: .14em; }
+  .dial-sub { max-width: 260px; }
+  #v-dial .dial { grid-column: 1; grid-row: 1 / span 6; width: calc(100vh - 24px); width: calc(100dvh - 24px); max-width: 100%; margin: 0; }
+  #v-dial > .mode, #d-timer > :not(.dial), #d-stopwatch > :not(.dial) { grid-column: 2; }
+  #v-dial > .mode { grid-row: 1; width: 100%; max-width: 300px; margin: 0 0 8px; align-self: end; }
+  #v-dial > .mode button { font-size: 13px; letter-spacing: .04em; padding: 0 6px; }
+  #v-dial > .mode, #v-dial .dial-title, #v-dial .dial-sub { align-self: center; }
+  .sw-time { font-size: 46px; }
+  .r-top { display: contents; }
+  .r-top button { position: absolute; top: 6px; left: max(10px, env(safe-area-inset-left, 0px)); z-index: 2; }
+  .r-spacer { display: none; }
+  #runner { grid-template-columns: minmax(0, 1fr) minmax(200px, 240px); grid-template-rows: 1fr 1fr; }
+  .r-title { grid-column: 2; grid-row: 1; align-self: end; padding-bottom: 6px; }
+  .r-center { grid-column: 1; grid-row: 1 / span 2; }
+  .r-bottom { grid-column: 2; grid-row: 2; align-self: start; padding-top: 6px; }
+  .r-controls { gap: 8px; padding-inline: 0; }
+  .r-controls button { width: 54px; height: 54px; }
+  .r-controls button.main { width: 66px; height: 66px; }
+  .r-center .ring { width: min(calc(100vh - 66px), 420px); width: min(calc(100dvh - 66px), 420px); margin: 0 26px; }
   .kp-body { max-width: 640px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; align-content: center; padding-bottom: 0; }
   .kp-display { grid-column: 1; font-size: 60px; align-self: end; text-align: center; }
   .kp-units { grid-column: 1; margin: 0 auto; }
