@@ -30,13 +30,22 @@ Les polices Barlow et Barlow Condensed sont chargées depuis Google Fonts. Hors 
 2. Dans **Settings > Pages**, choisissez **GitHub Actions** comme source.
 3. Chaque push sur la branche `main` déclenche `.github/workflows/pages.yml` et met le site en ligne.
 
-Sur téléphone, ouvrez l'adresse du site puis utilisez « Ajouter à l'écran d'accueil » pour l'avoir comme une application.
+## Installer l'application
+
+ChronoSport est une application web installable (PWA) : plein écran, icône sur l'écran d'accueil, fonctionnement hors connexion.
+
+- **iPhone / iPad** : ouvrez https://927h021.github.io/ChronoSport/ dans **Safari**, touchez le bouton Partager, puis **Sur l'écran d'accueil**.
+- **Android** : ouvrez l'adresse dans Chrome, menu ⋮, puis **Installer l'application**.
+- **Ordinateur** : dans Chrome ou Edge, icône d'installation dans la barre d'adresse.
+
+L'application se met à jour toute seule à l'ouverture quand une nouvelle version est publiée.
 
 ## Structure
 
 ```
 index.html                    toute l'application (HTML, CSS, JavaScript)
 manifest.webmanifest          nom et icônes pour l'installation sur l'écran d'accueil
+sw.js                         service worker : mode hors connexion et mises à jour
 icons/                        icônes de l'application (180, 192 et 512 px, favicon)
 .github/workflows/pages.yml   déploiement GitHub Pages
 LICENSE                       licence MIT
