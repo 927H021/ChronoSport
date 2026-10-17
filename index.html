@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261017183000">
+<meta name="app-version" content="20261017184344">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -25,7 +25,7 @@
   function check() {
     if (busy || !cur || !/^https?:/.test(location.protocol)) return; busy = true;
     fetch(location.pathname + '?nocache=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
-      var m = t.match(/<meta name="app-version" content="([^"]+)"/);
+      var m = t.match(/<meta name="app-version" content="20261017184344"]+)"/);
       if (m && m[1] !== cur) { location.replace(location.pathname + '?v=' + m[1]); }
       busy = false;
     }).catch(function () { busy = false; });
@@ -454,6 +454,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   box-shadow: inset 0 0 0 2px #0b0c0f, inset 0 0 0 3px var(--accent), 0 0 12px rgba(255,106,26,.4), 0 1px 0 rgba(255,255,255,.55); }
 .dial-pill { background: #0b0c0f !important; color: #f2f2ee !important; border: 1px solid #4a4e56; border-radius: 6px; box-shadow: inset 0 0 0 3px #0b0c0f, inset 0 0 0 4px #272a30, 0 1px 0 rgba(255,255,255,.55), 0 4px 10px rgba(0,0,0,.25); }
 .round[hidden], .sw-btn[hidden] { display: none; }
+/* ---- settings rows: compact buttons next to their label ---- */
+.row .btn { width: auto; flex: none; min-width: 104px; min-height: 38px; padding: 0 16px; font-size: 16px; background: #0b0c0f; border: 1px solid #4a4e56; border-radius: 5px; box-shadow: inset 0 0 0 2px #0b0c0f, inset 0 0 0 3px #272a30; letter-spacing: .12em; }
+.row .btn.ghost { color: var(--accent); }
+.row .btn.danger { color: #ff5a4f; }
+.row .lbl { white-space: normal; }
 /* ---- compact timer layout ---- */
 #v-dial .dial, .dial { width: min(100%, 400px, 52vh); }
 .dial-title { min-height: 36px; }
