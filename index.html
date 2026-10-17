@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261017185743">
+<meta name="app-version" content="20261017190253">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -494,7 +494,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 /* ---- landscape (phone turned sideways): side rail, two-column screens, no scrolling ---- */
 @media (orientation: landscape) and (max-height: 520px) {
   body { flex-direction: row; }
-  .tabs { order: -1; flex-direction: column; width: 92px; flex: none; margin: 0 12px 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 4px 0 4px max(8px, env(safe-area-inset-left, 0px)); border-top: 0; border-right: 1px solid var(--line); box-shadow: none; }
+  .tabs { order: -1; flex-direction: column; box-sizing: content-box; width: 78px; flex: none; margin: 0 12px 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 4px 0 4px max(8px, env(safe-area-inset-left, 0px)); border-top: 0; border-right: 1px solid var(--line); box-shadow: none; }
   .tabs button { flex: 1; min-height: 0; font-size: 11px; letter-spacing: .08em; box-shadow: none !important; }
   .tabs button[aria-current="page"] { box-shadow: inset 3px 0 0 var(--accent) !important; }
   .tabs button svg { width: 22px; height: 22px; }
@@ -505,7 +505,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   #v-dial { height: 100%; padding-block: 4px; display: flex; flex-direction: column; }
   #v-dial .mode { width: 300px; margin: 0 auto 4px; flex: none; }
   #d-timer:not([hidden]), #d-stopwatch:not([hidden]) { flex: 1; min-height: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 28px; align-content: center; justify-items: center; align-items: center; }
-  #d-timer .dial, #d-stopwatch .dial { grid-column: 1; grid-row: 1 / span 4; width: min(calc(100vh - 92px), 330px); margin: 0; }
+  #d-timer .dial, #d-stopwatch .dial { grid-column: 1; grid-row: 1 / span 4; width: min(calc(100vh - 110px), 300px); margin: 0 18px; }
   #d-timer > :not(.dial), #d-stopwatch > :not(.dial) { grid-column: 2; }
   .dial-title { min-height: 0; font-size: 16px; align-self: end; }
   .dial-sub { min-height: 0; font-size: 12px; text-align: center; }
@@ -519,8 +519,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   #runner[hidden] { display: none; }
   #runner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); grid-template-rows: auto minmax(0, 1fr); column-gap: 12px; align-items: center; }
   .r-top { grid-column: 1 / -1; max-width: none; min-height: 44px; }
-  .r-center { grid-column: 1; grid-row: 2; display: grid; grid-template-columns: auto auto; justify-content: center; align-content: center; column-gap: 18px; row-gap: 4px; height: 100%; }
-  .r-center .ring { grid-row: 1 / span 2; width: min(calc(100vh - 96px), 320px); margin: 0; }
+  .r-center { grid-column: 1; grid-row: 2; display: grid; grid-template-columns: auto auto; justify-content: center; align-content: center; column-gap: 6px; row-gap: 4px; height: 100%; }
+  .r-center .ring { grid-row: 1 / span 2; width: min(calc(100vh - 120px), 290px); margin: 0 30px; }
   .r-center .r-sub { display: flex; flex-direction: column; gap: 6px; align-self: end; }
   .r-center .sub svg { width: 70px; }
   #r-next { grid-column: 2; align-self: start; font-size: 12px; min-height: 0; max-width: 150px; }
