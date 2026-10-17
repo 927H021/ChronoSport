@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261017184344">
+<meta name="app-version" content="20261017184358">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -25,7 +25,7 @@
   function check() {
     if (busy || !cur || !/^https?:/.test(location.protocol)) return; busy = true;
     fetch(location.pathname + '?nocache=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
-      var m = t.match(/<meta name="app-version" content="20261017184344"]+)"/);
+      var m = t.match(/<meta name="app-version" content="([^"]+)"/);
       if (m && m[1] !== cur) { location.replace(location.pathname + '?v=' + m[1]); }
       busy = false;
     }).catch(function () { busy = false; });
