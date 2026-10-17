@@ -16,6 +16,7 @@
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 </style>
 <title>ChronoSport</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Yellowtail&display=swap">
@@ -406,9 +407,28 @@ tspan.wm-c { fill: #000; stroke: #f2f2ee; stroke-width: 2.6; paint-order: stroke
 tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-order: stroke; stroke-linejoin: round; }
 .ring tspan.wm-c, .ring tspan.wm-s { stroke-width: 1.6; }
 .ring .r-brand { font-size: 21px; }
+
+/* ---- timer dial: seconds track and hand, keypad ---- */
+.dial .dt1, .dial .dt2, .dial .dt3, .dial .drail { fill: none; }
+.dial .drail { stroke: rgba(255,255,255,.4); stroke-width: .8; }
+.dial .dt1 { stroke: rgba(255,255,255,.45); stroke-width: .9; }
+.dial .dt2 { stroke: rgba(255,255,255,.75); stroke-width: 1.2; }
+.dial .dt3 { stroke: #fff; stroke-width: 2.4; }
+.dial .d-sec-out { stroke: #0b0c0e; stroke-width: 5.5; stroke-linecap: round; }
+.dial .d-sec { stroke: #f2f2ee; stroke-width: 2.4; stroke-linecap: round; }
+.dial .pin { fill: #0b0c0e; }
+.dial-pill { color: var(--fg); cursor: pointer; }
+#keypad { background: var(--bg); }
+#kp-cancel { justify-self: start; }
+#kp-ok { justify-self: end; font-weight: 600; }
+.kp-body { flex: 1; min-height: 0; max-width: 360px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding-bottom: 12px; }
+.kp-display { font-family: var(--fd); font-size: 76px; font-weight: 600; letter-spacing: .06em; font-variant-numeric: tabular-nums; line-height: 1; }
+.kp-units { display: flex; justify-content: space-around; width: 100%; max-width: 260px; color: var(--muted); font-family: var(--fd); letter-spacing: .2em; text-transform: uppercase; font-size: 14px; margin-bottom: 18px; }
+.kp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 320px; }
+.kp-key { height: 72px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); font-family: var(--fd); font-size: 34px; font-weight: 600; color: var(--fg); touch-action: manipulation; display: grid; place-items: center; }
+.kp-key.fn { color: var(--accent); }
 </style>
-</head>
-<body>
+
 <div class="views" id="views">
   <section class="view" id="v-home">
     <div class="brand"><span class="wordmark" role="img" aria-label="ChronoSport"><span class="wm-c">Chrono</span><span class="wm-s">Sport</span></span></div>
@@ -459,7 +479,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <div class="dial-title" id="d-title">Minuteur 45 min</div>
     <div class="dial-sub" id="d-sub"></div>
     <svg class="dial idle" id="d-svg" viewBox="0 0 400 400" role="slider" tabindex="0" aria-label="Durée en minutes" aria-valuemin="1" aria-valuemax="60" aria-valuenow="45"></svg>
-    <div class="dial-pill num" id="d-pill">45 : 00</div>
+    <button type="button" class="dial-pill num" id="d-pill" aria-label="Saisir la durée au pavé numérique">45 : 00</button>
     <div class="chips" id="d-chips"></div>
     <div class="dial-ctrl">
       <button class="round sm" type="button" id="d-reset" aria-label="Réinitialiser" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v4.5h4.5"/></svg></button>
@@ -528,6 +548,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   </div>
   <div class="r-modal" id="r-confirm" hidden><div class="box"><h2>Arrêter la séance ?</h2><p>Elle sera enregistrée dans l'historique.</p><div class="btns"><button class="btn" type="button" id="r-cont">Continuer</button><button class="btn" type="button" id="r-stop">Arrêter</button></div></div></div>
   <div class="r-modal" id="r-done" hidden><div class="box"><h2>Séance terminée</h2><p id="r-done-text"></p><div class="btns"><button class="btn" type="button" id="r-again">Recommencer</button><button class="btn" type="button" id="r-end">Fermer</button></div></div></div>
+</section>
+<section class="overlay" id="keypad" hidden>
+  <div class="ed-head"><button type="button" id="kp-cancel">Annuler</button><h2>Durée</h2><button type="button" id="kp-ok">OK</button></div>
+  <div class="kp-body">
+    <div class="kp-display num" id="kp-display" aria-live="polite">00 : 00</div>
+    <div class="kp-units"><span>min</span><span>sec</span></div>
+    <div class="kp-grid" id="kp-grid"></div>
+  </div>
 </section>
 <div class="toast" id="toast" hidden></div>
 
@@ -738,7 +766,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     try {
       if (actx && actx.state === 'closed') { actx = null; master = null; }
       if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { actx = new AC(); master = null; } }
-      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e2) {}
+      try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e2) {}
       if (actx && actx.state !== 'running') {
         var pr = actx.resume(); if (pr && pr.catch) pr.catch(function () {});
         try { var sb = actx.createBuffer(1, 1, 22050), ss = actx.createBufferSource(); ss.buffer = sb; ss.connect(actx.destination); ss.start(0); } catch (e3) {}
@@ -755,9 +783,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     return master;
   }
   /* Loud square-wave alerts: 'go' (start of effort), 'setEnd' (end of a set), 'end' (end of session). */
-  function alertSound(kind) {
-    if (!settings.sound || !actx) return;
-    var out = masterOut(); if (!out) return;
+  function alertSound(kind, delaySec) {
+    var nodes = [];
+    if (!settings.sound || !actx) return nodes;
+    var out = masterOut(); if (!out) return nodes;
     var pats = {
       go: [[1320, 150, 0], [1320, 150, 220]],
       setEnd: [[1175, 230, 0], [1175, 230, 330], [1175, 230, 660], [1568, 520, 990]],
@@ -766,7 +795,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var gain = Math.min(1, 0.45 + settings.volume * 0.55) * 0.6;
     (pats[kind] || []).forEach(function (p) {
       try {
-        var t0 = actx.currentTime + p[2] / 1000, d = p[1] / 1000;
+        var t0 = actx.currentTime + (delaySec || 0) + p[2] / 1000, d = p[1] / 1000;
         var o = actx.createOscillator(), g = actx.createGain();
         o.type = 'square'; o.frequency.value = p[0];
         g.gain.setValueAtTime(0.0001, t0);
@@ -774,8 +803,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
         g.gain.setValueAtTime(gain, t0 + d - 0.03);
         g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
         o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.02);
+        nodes.push(o);
       } catch (e) {}
     });
+    return nodes;
   }
   function tone(freq, ms, delay) {
     if (!settings.sound || !actx) return;
@@ -826,13 +857,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#r-name').textContent = w.name;
     acquireWake();
     buildSubs(w);
+    keepAliveCheck();
     enterSeg(0, 0);
     drawSub(segs[0].dur * 1000);
     clearInterval(loop); loop = setInterval(tick, 100);
   }
   function enterSeg(i, carryMs) {
     run.i = i; var s = run.segs[i];
-    run.end = performance.now() + s.dur * 1000 - (carryMs || 0);
+    run.end = Date.now() + s.dur * 1000 - (carryMs || 0);
     run.lastSec = -1;
     $('#runner').dataset.phase = s.type;
     $('#r-phase').textContent = PHASE_LABEL[s.type];
@@ -851,7 +883,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function elapsedTotal() {
     var done = 0; for (var k = 0; k < run.i; k++) done += run.segs[k].dur;
     var cur = run.segs[run.i];
-    var rem = run.paused ? run.pausedRem : Math.max(0, run.end - performance.now());
+    var rem = run.paused ? run.pausedRem : Math.max(0, run.end - Date.now());
     return done + (cur.dur - rem / 1000);
   }
   function draw(remMs) {
@@ -870,11 +902,16 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   function tick() {
     if (!run || run.paused || run.finished) return;
-    var rem = run.end - performance.now();
+    var rem = run.end - Date.now();
     if (rem <= 0) {
-      if (run.i + 1 >= run.segs.length) { finishRun(); return; }
-      enterSeg(run.i + 1, -rem);
-      rem = run.end - performance.now();
+      var over = -rem, ni = run.i;
+      while (true) {
+        if (ni + 1 >= run.segs.length) { finishRun(); return; }
+        ni++;
+        if (over >= run.segs[ni].dur * 1000) over -= run.segs[ni].dur * 1000; else break;
+      }
+      enterSeg(ni, over);
+      rem = run.end - Date.now();
     }
     var sec = draw(Math.max(0, rem));
     if (actx && settings.sound && actx.state !== 'running') soundHint();
@@ -913,12 +950,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function togglePause() {
     if (!run || run.finished) return;
     if (!run.paused) {
-      run.paused = true; run.pausedRem = Math.max(0, run.end - performance.now());
+      run.paused = true; run.pausedRem = Math.max(0, run.end - Date.now());
       $('#r-ico').innerHTML = ICO_PLAY; $('#r-toggle').setAttribute('aria-label', 'Reprendre'); $('#runner').classList.add('paused');
       $('#r-phase').textContent = 'En pause';
       releaseWake();
     } else {
-      run.paused = false; run.end = performance.now() + run.pausedRem;
+      run.paused = false; run.end = Date.now() + run.pausedRem;
       $('#r-ico').innerHTML = ICO_PAUSE; $('#r-toggle').setAttribute('aria-label', 'Pause'); $('#runner').classList.remove('paused');
       $('#r-phase').textContent = PHASE_LABEL[run.segs[run.i].type];
       acquireWake();
@@ -933,14 +970,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     enterSeg(i, 0);
     if (wasPaused) { run.paused = true; run.pausedRem = run.segs[i].dur * 1000; $('#runner').classList.add('paused'); $('#r-phase').textContent = 'En pause'; }
     else { $('#r-ico').innerHTML = ICO_PAUSE; }
-    draw(run.paused ? run.pausedRem : run.end - performance.now());
+    draw(run.paused ? run.pausedRem : run.end - Date.now());
   }
   $('#r-toggle').addEventListener('click', togglePause);
   $('#r-next-btn').addEventListener('click', function () { if (run) jump(run.i + 1); });
   $('#r-prev').addEventListener('click', function () {
     if (!run) return;
     var s = run.segs[run.i];
-    var elapsedSeg = s.dur - (run.paused ? run.pausedRem : Math.max(0, run.end - performance.now())) / 1000;
+    var elapsedSeg = s.dur - (run.paused ? run.pausedRem : Math.max(0, run.end - Date.now())) / 1000;
     jump(elapsedSeg > 2 ? run.i : run.i - 1);
   });
   $('#r-close').addEventListener('click', function () {
@@ -1018,29 +1055,44 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
   /* ---------- visual dial (chrono) ---------- */
   var dsvg = $('#d-svg');
-  var dial = { min: Math.min(60, Math.max(1, parseInt(load('tempo.dial', 45), 10) || 45)), rem: 0, end: 0, state: 'idle', timer: null };
-  dial.rem = dial.min * 60000;
+  var dial = { sec: 2700, rem: 0, end: 0, state: 'idle', timer: null, alarm: null };
+  (function () {
+    var v = parseInt(load('tempo.dial2', 0), 10);
+    if (!v) { var old = parseInt(load('tempo.dial', 45), 10); v = (old >= 1 && old <= 60 ? old : 45) * 60; }
+    dial.sec = Math.min(5999, Math.max(1, v)); dial.rem = dial.sec * 1000;
+  })();
   var PRESETS = [5, 10, 15, 20, 30, 45, 60];
   function polar(r, m) { var a = m * 6 * Math.PI / 180; return [200 - r * Math.sin(a), 200 - r * Math.cos(a)]; }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function dialLabel(sec) { var m = Math.floor(sec / 60), r = sec % 60; return r ? m + ' min ' + r + ' s' : m + ' min'; }
   function buildDial() {
     var s = '<circle class="face" cx="200" cy="200" r="140"/>';
     s += '<circle class="bezel" cx="200" cy="200" r="170"/>';
     s += '<circle class="wedge" id="d-full" cx="200" cy="200" r="140" visibility="hidden"/>';
     s += '<path class="wedge" id="d-wedge" d=""/>';
+    var d1 = '', d2 = '', d3 = '', k, aa, sn, cs, ri, ro, sg;
+    for (k = 0; k < 240; k++) {
+      aa = k * 1.5 * Math.PI / 180; sn = Math.sin(aa); cs = Math.cos(aa);
+      if (k % 20 === 0) { ri = 118; ro = 136; } else if (k % 4 === 0) { ri = 124; ro = 134; } else { ri = 128; ro = 134; }
+      sg = 'M' + (200 + ri * sn).toFixed(2) + ' ' + (200 - ri * cs).toFixed(2) + 'L' + (200 + ro * sn).toFixed(2) + ' ' + (200 - ro * cs).toFixed(2);
+      if (k % 20 === 0) d3 += sg; else if (k % 4 === 0) d2 += sg; else d1 += sg;
+    }
+    s += '<circle class="drail" cx="200" cy="200" r="128"/><circle class="drail" cx="200" cy="200" r="134"/><path class="dt1" d="' + d1 + '"/><path class="dt2" d="' + d2 + '"/><path class="dt3" d="' + d3 + '"/>';
     var m, p1, p2, major;
     for (m = 0; m < 60; m++) {
       major = m % 5 === 0; p1 = polar(146, m); p2 = polar(major ? 160 : 152, m);
       s += '<line class="tick' + (major ? ' major' : '') + '" x1="' + p1[0].toFixed(2) + '" y1="' + p1[1].toFixed(2) + '" x2="' + p2[0].toFixed(2) + '" y2="' + p2[1].toFixed(2) + '"/>';
     }
     for (m = 0; m < 60; m += 5) { p1 = polar(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
-    s += '<text class="brand-mark" x="200" y="118"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text>';
-    s += '<line class="hand" id="d-hand" x1="200" y1="200" x2="200" y2="162"/><circle class="hub" cx="200" cy="200" r="13"/>';
+    s += '<text class="brand-mark" x="200" y="108"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text>';
+    s += '<line class="hand" id="d-hand" x1="200" y1="200" x2="200" y2="100"/>';
+    s += '<g id="d-sec"><line class="d-sec-out" x1="200" y1="224" x2="200" y2="64"/><line class="d-sec" x1="200" y1="224" x2="200" y2="64"/></g>';
+    s += '<circle class="hub" cx="200" cy="200" r="13"/><circle class="pin" cx="200" cy="200" r="4"/>';
     dsvg.innerHTML = s;
     var chips = $('#d-chips'); chips.textContent = '';
     PRESETS.forEach(function (n) {
       var b = el('button', 'chip', n + ' min'); b.type = 'button'; b.dataset.m = String(n);
-      b.addEventListener('click', function () { if (dial.state !== 'idle') dialReset(); setDialMin(n); });
+      b.addEventListener('click', function () { if (dial.state !== 'idle') dialReset(); setDialSec(n * 60); });
       chips.appendChild(b);
     });
   }
@@ -1056,56 +1108,72 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       wedge.setAttribute('d', 'M200 200 L200 60 A140 140 0 ' + (r > 30 ? 1 : 0) + ' 0 ' + ex.toFixed(2) + ' ' + ey.toFixed(2) + ' Z');
     }
     var hand = $('#d-hand');
-    hand.setAttribute('x2', (200 - 132 * Math.sin(a)).toFixed(2)); hand.setAttribute('y2', (200 - 132 * Math.cos(a)).toFixed(2));
+    hand.setAttribute('x2', (200 - 100 * Math.sin(a)).toFixed(2)); hand.setAttribute('y2', (200 - 100 * Math.cos(a)).toFixed(2));
+    var sr = (dial.rem / 1000) % 60;
+    $('#d-sec').setAttribute('transform', 'rotate(' + (-(sr * 6)).toFixed(2) + ' 200 200)');
     var secs = Math.ceil(dial.rem / 1000);
     $('#d-pill').textContent = pad2(Math.floor(secs / 60)) + ' : ' + pad2(secs % 60);
-    $('#d-title').textContent = 'Minuteur ' + dial.min + ' min';
-    dsvg.setAttribute('aria-valuenow', String(dial.min));
+    $('#d-title').textContent = 'Minuteur ' + dialLabel(dial.sec);
+    dsvg.setAttribute('aria-valuenow', String(Math.round(dial.sec / 60)));
     dsvg.classList.toggle('idle', dial.state === 'idle');
-    $$('#d-chips .chip').forEach(function (c) { c.setAttribute('aria-pressed', c.dataset.m === String(dial.min) ? 'true' : 'false'); });
+    $$('#d-chips .chip').forEach(function (c) { c.setAttribute('aria-pressed', String(Number(c.dataset.m) * 60) === String(dial.sec) ? 'true' : 'false'); });
     var running = dial.state === 'running';
     $('#d-ico').innerHTML = running ? ICO_PAUSE : ICO_PLAY;
     $('#d-toggle').setAttribute('aria-label', running ? 'Pause' : (dial.state === 'paused' ? 'Reprendre' : 'Démarrer'));
     $('#d-reset').hidden = dial.state === 'idle';
-    $('#d-sub').textContent = { idle: 'Faites glisser le cadran pour régler la durée', running: 'En cours', paused: 'En pause', done: 'Terminé' }[dial.state];
+    $('#d-sub').textContent = { idle: 'Faites glisser le cadran ou touchez le temps', running: 'En cours', paused: 'En pause', done: 'Terminé' }[dial.state];
   }
-  function setDialMin(m) { dial.min = m; dial.rem = m * 60000; save('tempo.dial', m); renderDial(); }
+  function setDialSec(sec) {
+    sec = Math.min(5999, Math.max(1, Math.round(sec)));
+    dial.sec = sec; dial.rem = sec * 1000; save('tempo.dial2', sec); persistLive(); renderDial();
+  }
   function dialLog(done, secs) {
     if (secs < 5) return;
-    history.unshift({ id: uid(), name: 'Minuteur ' + dial.min + ' min', at: Date.now(), seconds: Math.round(secs), done: done });
+    history.unshift({ id: uid(), name: 'Minuteur ' + dialLabel(dial.sec), at: Date.now(), seconds: Math.round(secs), done: done });
     history = history.slice(0, 500); save('tempo.history', history);
     if (tab === 'history') renderHistory();
   }
+  function dialCancelAlarm() {
+    if (dial.alarm) { dial.alarm.forEach(function (o) { try { o.stop(0); } catch (e) {} }); }
+    dial.alarm = null;
+  }
   function dialTick() {
     if (dial.state !== 'running') return;
-    dial.rem = Math.max(0, dial.end - performance.now());
-    if (dial.rem <= 0) { dialFinish(); return; }
+    dial.rem = Math.max(0, dial.end - Date.now());
+    if (dial.rem <= 0) { dialFinish(false); return; }
     renderDial();
   }
-  function dialFinish() {
+  function dialFinish(silent) {
     clearInterval(dial.timer); dial.timer = null;
+    var scheduled = dial.alarm && dial.alarm.length; dial.alarm = null;
     dial.state = 'done'; dial.rem = 0;
-    alertSound('end'); vibrate([300, 100, 300, 100, 500]);
-    speak('Minuteur terminé');
-    dialLog(true, dial.min * 60); releaseWake(); renderDial();
+    if (!silent) {
+      if (!scheduled) alertSound('end');
+      vibrate([300, 100, 300, 100, 500]);
+      speak('Minuteur terminé');
+    }
+    dialLog(true, dial.sec); releaseWake(); persistLive(); keepAliveCheck(); renderDial();
   }
   function dialReset() {
-    if (dial.state === 'running' || dial.state === 'paused') dialLog(false, (dial.min * 60000 - dial.rem) / 1000);
-    clearInterval(dial.timer); dial.timer = null; releaseWake();
-    dial.state = 'idle'; dial.rem = dial.min * 60000; renderDial();
+    if (dial.state === 'running' || dial.state === 'paused') dialLog(false, (dial.sec * 1000 - dial.rem) / 1000);
+    clearInterval(dial.timer); dial.timer = null; releaseWake(); dialCancelAlarm();
+    dial.state = 'idle'; dial.rem = dial.sec * 1000; persistLive(); keepAliveCheck(); renderDial();
   }
   function dialStart() {
     ensureAudio();
-    dial.end = performance.now() + dial.rem; dial.state = 'running';
+    dial.end = Date.now() + dial.rem; dial.state = 'running';
+    dialCancelAlarm();
+    if (settings.sound && actx && actx.state === 'running') dial.alarm = alertSound('end', dial.rem / 1000);
     clearInterval(dial.timer); dial.timer = setInterval(dialTick, 100);
-    acquireWake(); renderDial();
+    acquireWake(); persistLive(); keepAliveCheck(); renderDial();
   }
   $('#d-toggle').addEventListener('click', function () {
     if (dial.state === 'idle' || dial.state === 'paused') { dialStart(); }
     else if (dial.state === 'running') {
-      dial.rem = Math.max(0, dial.end - performance.now()); dial.state = 'paused';
-      clearInterval(dial.timer); dial.timer = null; releaseWake(); renderDial();
-    } else { dial.rem = dial.min * 60000; dialStart(); }
+      dial.rem = Math.max(0, dial.end - Date.now()); dial.state = 'paused';
+      clearInterval(dial.timer); dial.timer = null; releaseWake(); dialCancelAlarm();
+      persistLive(); keepAliveCheck(); renderDial();
+    } else { dial.rem = dial.sec * 1000; dialStart(); }
   });
   $('#d-reset').addEventListener('click', dialReset);
   var dragging = false;
@@ -1113,9 +1181,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var b = dsvg.getBoundingClientRect();
     var x = e.clientX - (b.left + b.width / 2), y = e.clientY - (b.top + b.height / 2);
     var phi = Math.atan2(-x, -y); if (phi < 0) phi += 2 * Math.PI;
+    var cur = Math.round(dial.sec / 60);
     var m = Math.round(phi / (2 * Math.PI) * 60);
-    if (m === 0 || m === 60 || Math.abs(m - dial.min) > 30) m = dial.min > 30 ? 60 : 1;
-    if (m !== dial.min) setDialMin(m);
+    if (m === 0 || m === 60 || Math.abs(m - cur) > 30) m = cur > 30 ? 60 : 1;
+    if (m !== cur || dial.sec % 60) setDialSec(m * 60);
   }
   dsvg.addEventListener('pointerdown', function (e) {
     if (dial.state !== 'idle') return;
@@ -1126,9 +1195,51 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   ['pointerup', 'pointercancel'].forEach(function (ev) { dsvg.addEventListener(ev, function () { dragging = false; }); });
   dsvg.addEventListener('keydown', function (e) {
     if (dial.state !== 'idle') return;
-    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); setDialMin(Math.min(60, dial.min + 1)); }
-    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); setDialMin(Math.max(1, dial.min - 1)); }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); setDialSec(Math.min(3600, dial.sec + 60)); }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { e.preventDefault(); setDialSec(Math.max(60, dial.sec - 60)); }
   });
+
+  /* ---------- numeric keypad (minutes and seconds) ---------- */
+  var kp = '', kpFresh = false;
+  function kpPadded() { return ('0000' + kp).slice(-4); }
+  function kpRender() { var p = kpPadded(); $('#kp-display').textContent = p.slice(0, 2) + ' : ' + p.slice(2); }
+  function openKeypad() {
+    if (dial.state !== 'idle') { toast('Réinitialisez le minuteur pour changer la durée'); return; }
+    kp = ''; kpFresh = true;
+    kpRender(); $('#keypad').hidden = false;
+  }
+  function kpPress(k) {
+    if (kpFresh) { kpFresh = false; if (k !== 'del') kp = ''; }
+    if (k === 'del') kp = kp.slice(0, -1);
+    else if (k === '00') { if (kp !== '') kp = (kp + '00').slice(0, 4); }
+    else if (kp.length < 4 && !(kp === '' && k === '0')) kp += k;
+    kpRender();
+  }
+  function kpOk() {
+    var p = kpPadded(), t = parseInt(p.slice(0, 2), 10) * 60 + parseInt(p.slice(2), 10);
+    if (t < 1) { toast('Entrez une durée'); return; }
+    setDialSec(Math.min(5999, t)); $('#keypad').hidden = true;
+  }
+  function buildKeypad() {
+    var g = $('#kp-grid'); g.textContent = '';
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', 'del'].forEach(function (k) {
+      var b = el('button', 'kp-key' + (k === 'del' ? ' fn' : '')); b.type = 'button';
+      if (k === 'del') { b.setAttribute('aria-label', 'Effacer'); b.innerHTML = '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h11v14H9l-6-7z"/><path d="M13 10l4 4M17 10l-4 4"/></svg>'; }
+      else b.textContent = k;
+      b.addEventListener('click', function () { kpPress(k); });
+      g.appendChild(b);
+    });
+    $('#d-pill').addEventListener('click', openKeypad);
+    $('#kp-cancel').addEventListener('click', function () { $('#keypad').hidden = true; });
+    $('#kp-ok').addEventListener('click', kpOk);
+    document.addEventListener('keydown', function (e) {
+      if ($('#keypad').hidden) return;
+      if (/^[0-9]$/.test(e.key)) kpPress(e.key);
+      else if (e.key === 'Backspace') kpPress('del');
+      else if (e.key === 'Enter') kpOk();
+      else if (e.key === 'Escape') $('#keypad').hidden = true;
+    });
+  }
 
   /* ---------- stopwatch ---------- */
   var sw = { state: 'idle', base: 0, t0: 0, lastLap: 0, laps: [], timer: null };
@@ -1136,7 +1247,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var cs = Math.floor(ms / 10) % 100, s = Math.floor(ms / 1000) % 60, m = Math.floor(ms / 60000) % 60, h = Math.floor(ms / 3600000);
     return (h ? h + ':' + pad2(m) : pad2(m)) + ':' + pad2(s) + ',' + pad2(cs);
   }
-  function swElapsed() { return sw.base + (sw.state === 'running' ? performance.now() - sw.t0 : 0); }
+  function swElapsed() { return sw.base + (sw.state === 'running' ? Date.now() - sw.t0 : 0); }
   function swTick() {
     var e = swElapsed();
     $('#sw-time').textContent = fmtSW(e);
@@ -1175,9 +1286,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       sw.base = swElapsed(); sw.state = 'paused';
       clearInterval(sw.timer); sw.timer = null; releaseWake();
     } else {
-      sw.t0 = performance.now(); sw.state = 'running';
+      sw.t0 = Date.now(); sw.state = 'running';
       clearInterval(sw.timer); sw.timer = setInterval(swTick, 33); acquireWake();
     }
+    persistLive(); keepAliveCheck();
     renderSW();
   });
   $('#sw-lap').addEventListener('click', function () {
@@ -1194,6 +1306,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       }
       sw.state = 'idle'; sw.base = 0; sw.lastLap = 0; sw.laps = [];
     }
+    persistLive(); keepAliveCheck();
     renderSW();
   });
   $$('#d-mode button').forEach(function (b) {
@@ -1287,6 +1400,54 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#sub-rest').classList.toggle('active', isRest);
   }
 
+  /* ---------- live state: timer and stopwatch survive a closed app ---------- */
+  function persistLive() {
+    save('tempo.live', {
+      dial: { sec: dial.sec, state: dial.state, rem: dial.rem, endAt: dial.end },
+      sw: { state: sw.state, base: sw.base, t0: sw.t0, lastLap: sw.lastLap, laps: sw.laps }
+    });
+  }
+  function restoreLive() {
+    var L = load('tempo.live', null); if (!L) return;
+    var d = L.dial, w = L.sw;
+    if (d && d.sec) {
+      dial.sec = Math.min(5999, Math.max(1, d.sec));
+      if (d.state === 'running') {
+        dial.end = d.endAt; dial.rem = Math.max(0, dial.end - Date.now()); dial.state = 'running';
+        if (dial.rem <= 0) { dialFinish(true); toast('Minuteur terminé pendant votre absence'); }
+        else { dial.timer = setInterval(dialTick, 100); }
+      } else if (d.state === 'paused') { dial.state = 'paused'; dial.rem = d.rem; }
+      else if (d.state === 'done') { dial.state = 'done'; dial.rem = 0; }
+      else { dial.rem = dial.sec * 1000; }
+    }
+    if (w && (w.state === 'running' || w.state === 'paused')) {
+      sw.state = w.state; sw.base = w.base || 0; sw.t0 = w.t0 || 0; sw.lastLap = w.lastLap || 0; sw.laps = w.laps || [];
+      if (sw.state === 'running') sw.timer = setInterval(swTick, 33);
+    }
+  }
+  /* A silent looping sound keeps the page alive in the background on phones. */
+  var kaEl = null;
+  function silentWav() {
+    var n = 8000, buf = new Uint8Array(44 + n), i;
+    function w32(o, v) { buf[o] = v & 255; buf[o + 1] = (v >> 8) & 255; buf[o + 2] = (v >> 16) & 255; buf[o + 3] = (v >> 24) & 255; }
+    function w16(o, v) { buf[o] = v & 255; buf[o + 1] = (v >> 8) & 255; }
+    function ws(o, t) { for (var j = 0; j < t.length; j++) buf[o + j] = t.charCodeAt(j); }
+    ws(0, 'RIFF'); w32(4, 36 + n); ws(8, 'WAVE'); ws(12, 'fmt '); w32(16, 16); w16(20, 1); w16(22, 1); w32(24, 8000); w32(28, 8000); w16(32, 1); w16(34, 8); ws(36, 'data'); w32(40, n);
+    for (i = 0; i < n; i++) buf[44 + i] = 128;
+    var bin = ''; for (i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+    return 'data:audio/wav;base64,' + btoa(bin);
+  }
+  function keepAliveCheck() {
+    var need = (run && !run.paused && !run.finished) || dial.state === 'running' || sw.state === 'running';
+    try {
+      if (need) {
+        if (!kaEl) { kaEl = new Audio(); kaEl.loop = true; kaEl.src = silentWav(); kaEl.setAttribute('playsinline', ''); }
+        if (kaEl.paused) { var pr = kaEl.play(); if (pr && pr.catch) pr.catch(function () {}); }
+      } else if (kaEl && !kaEl.paused) { kaEl.pause(); }
+    } catch (e) {}
+  }
+  setInterval(keepAliveCheck, 1500);
+
   /* ---------- audio recovery after the app was in the background ---------- */
   var lastHint = 0;
   function soundHint() {
@@ -1294,11 +1455,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     toast('Touchez l’écran pour réactiver le son');
   }
   ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio, true); });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) ensureAudio(); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { ensureAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
 
   /* ---------- init ---------- */
-  applyTheme(); syncSettings(); renderHome(); renderHistory(); buildDial(); renderDial(); buildSWDial(); renderSW(); buildRunnerTrack();
+  applyTheme(); syncSettings(); renderHome(); renderHistory(); buildDial(); buildKeypad(); buildSWDial(); buildRunnerTrack(); restoreLive(); renderDial(); renderSW();
 })();
 </script>
-</body>
-</html>
