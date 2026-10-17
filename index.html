@@ -6,7 +6,11 @@
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ChronoSport">
 <meta name="description" content="ChronoSport : minuteur d'intervalles, minuteur à cadran et chronomètre pour l'entraînement.">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
 <style>
 [hidden]{display:none!important}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -393,12 +397,21 @@ select { border-radius: 6px; color: var(--accent); }
 .brand svg { width: 34px; height: 34px; flex: none; }
 .brand-name { font-family: var(--fd); font-size: 22px; font-weight: 600; letter-spacing: .2em; line-height: 1; }
 .brand-name b { color: var(--accent); font-weight: 700; }
+
+/* ---- ChronoSport wordmark: Chrono in black, Sport in orange, no space between ---- */
+.wordmark { font-family: var(--fs); font-size: 46px; line-height: 1.1; display: inline-block; white-space: nowrap; letter-spacing: 0; }
+.wordmark .wm-c { color: #000; text-shadow: 1px 0 #f2f2ee, -1px 0 #f2f2ee, 0 1px #f2f2ee, 0 -1px #f2f2ee, 1px 1px #f2f2ee, -1px -1px #f2f2ee, 1px -1px #f2f2ee, -1px 1px #f2f2ee; }
+.wordmark .wm-s { color: var(--accent); text-shadow: 1px 0 #0b0c0e, -1px 0 #0b0c0e, 0 1px #0b0c0e, 0 -1px #0b0c0e, 1px 1px #0b0c0e, -1px -1px #0b0c0e, 1px -1px #0b0c0e, -1px 1px #0b0c0e; }
+tspan.wm-c { fill: #000; stroke: #f2f2ee; stroke-width: 2.6; paint-order: stroke; stroke-linejoin: round; }
+tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-order: stroke; stroke-linejoin: round; }
+.ring tspan.wm-c, .ring tspan.wm-s { stroke-width: 1.6; }
+.ring .r-brand { font-size: 21px; }
 </style>
 </head>
 <body>
 <div class="views" id="views">
   <section class="view" id="v-home">
-    <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="13" y="1" width="6" height="3.4" rx="1" fill="currentColor"/><circle cx="16" cy="18" r="11" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M16 18V8.6A9.4 9.4 0 0 1 25.4 18z" fill="var(--accent)"/><circle cx="16" cy="18" r="1.8" fill="currentColor"/></svg><span class="brand-name">CHRONO<b>SPORT</b></span></div>
+    <div class="brand"><span class="wordmark" role="img" aria-label="ChronoSport"><span class="wm-c">Chrono</span><span class="wm-s">Sport</span></span></div>
     <div class="view-head"><h1>Minuteurs</h1><button class="nav-btn" type="button" id="new-btn" aria-label="Nouveau minuteur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4.5v15M4.5 12h15"/></svg></button></div>
     <ul class="group" id="list"></ul>
     <div class="foot legend">
@@ -498,7 +511,7 @@ select { border-radius: 6px; color: var(--accent); }
   <div class="r-center">
     <div class="ring">
       <svg viewBox="0 0 240 240" aria-hidden="true"><circle class="track" cx="120" cy="120" r="112"/><circle class="prog" id="r-ring" cx="120" cy="120" r="112"/></svg>
-      <svg class="ring-over" viewBox="0 0 240 240" aria-hidden="true"><circle class="rail" cx="120" cy="120" r="96.3"/><circle class="rail" cx="120" cy="120" r="100.3"/><path class="t1" id="r-t1"/><path class="t2" id="r-t2"/><path class="t3" id="r-t3"/><text class="r-brand" x="120" y="58">ChronoSport</text><g id="r-nums"></g><g id="r-mark"><path class="mark" d="M120 29L113.5 14.5H126.5Z"/></g></svg>
+      <svg class="ring-over" viewBox="0 0 240 240" aria-hidden="true"><circle class="rail" cx="120" cy="120" r="96.3"/><circle class="rail" cx="120" cy="120" r="100.3"/><path class="t1" id="r-t1"/><path class="t2" id="r-t2"/><path class="t3" id="r-t3"/><text class="r-brand" x="120" y="58"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text><g id="r-nums"></g><g id="r-mark"><path class="mark" d="M120 29L113.5 14.5H126.5Z"/></g></svg>
       <div class="r-time"><div id="r-count" role="timer">0:00</div><div id="r-phase">Préparation</div></div>
     </div>
     <div class="r-sub" id="r-sub"><div class="sub" id="sub-sets"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div><div class="sub" id="sub-prep"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div><div class="sub" id="sub-rest"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div></div>
@@ -1021,7 +1034,7 @@ select { border-radius: 6px; color: var(--accent); }
       s += '<line class="tick' + (major ? ' major' : '') + '" x1="' + p1[0].toFixed(2) + '" y1="' + p1[1].toFixed(2) + '" x2="' + p2[0].toFixed(2) + '" y2="' + p2[1].toFixed(2) + '"/>';
     }
     for (m = 0; m < 60; m += 5) { p1 = polar(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
-    s += '<text class="brand-mark" x="200" y="118">ChronoSport</text>';
+    s += '<text class="brand-mark" x="200" y="118"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text>';
     s += '<line class="hand" id="d-hand" x1="200" y1="200" x2="200" y2="162"/><circle class="hub" cx="200" cy="200" r="13"/>';
     dsvg.innerHTML = s;
     var chips = $('#d-chips'); chips.textContent = '';
@@ -1208,7 +1221,7 @@ select { border-radius: 6px; color: var(--accent); }
     }
     s += '<circle class="rail" cx="200" cy="200" r="154"/><circle class="rail" cx="200" cy="200" r="160"/><path class="t1" d="' + d1 + '"/><path class="t2" d="' + d2 + '"/><path class="t3" d="' + d3 + '"/>';
     for (m = 0; m < 60; m += 5) { p1 = cw(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
-    s += '<text class="brand-mark" x="200" y="118">ChronoSport</text>';
+    s += '<text class="brand-mark" x="200" y="118"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text>';
     s += '<g id="sw-hand"><line class="sw-hand-line" x1="200" y1="224" x2="200" y2="66"/><circle class="sw-hub" cx="200" cy="200" r="9"/><circle class="sw-pin" cx="200" cy="200" r="3"/></g>';
     $('#sw-svg').innerHTML = s;
   }

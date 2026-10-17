@@ -36,6 +36,8 @@ Sur téléphone, ouvrez l'adresse du site puis utilisez « Ajouter à l'écran d
 
 ```
 index.html                    toute l'application (HTML, CSS, JavaScript)
+manifest.webmanifest          nom et icônes pour l'installation sur l'écran d'accueil
+icons/                        icônes de l'application (180, 192 et 512 px, favicon)
 .github/workflows/pages.yml   déploiement GitHub Pages
 LICENSE                       licence MIT
 ```
