@@ -14,7 +14,7 @@
 <title>ChronoSport</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Yellowtail&display=swap">
 <style>
 /* Layout: cockpit instrument panel. Matte black panels with hairline borders,
    one signal-orange accent, condensed instrument numerals, graduated bezel dials.
@@ -381,6 +381,14 @@ select { border-radius: 6px; color: var(--accent); }
 .sw-dial .t1 { fill: none; stroke: var(--muted); stroke-width: .9; }
 .sw-dial .t2 { fill: none; stroke: var(--fg); stroke-width: 1.2; opacity: .7; }
 .sw-dial .t3 { fill: none; stroke: var(--fg); stroke-width: 2.6; }
+:root { --fs: 'Yellowtail', 'Snell Roundhand', 'Brush Script MT', cursive; }
+.dial .brand-mark { fill: var(--lume); font-family: var(--fs); font-size: 36px; font-weight: 400; letter-spacing: 0; text-anchor: middle; dominant-baseline: central; }
+.ring { margin: 16px; }
+.ring .ring-over { overflow: visible; }
+.ring .r-brand { fill: #fff; font-family: var(--fs); font-size: 19px; text-anchor: middle; dominant-baseline: central; }
+.ring .r-num { fill: rgba(255,255,255,.7); font: 600 11px var(--fd); letter-spacing: .02em; text-anchor: middle; dominant-baseline: central; }
+.ring .r-num.q { fill: #fff; font-size: 13px; }
+@media (max-height: 720px) { .ring { margin: 10px; width: min(70vw, 34vh); } }
 .brand { display: flex; align-items: center; gap: 10px; padding-top: 4px; color: var(--fg); }
 .brand svg { width: 34px; height: 34px; flex: none; }
 .brand-name { font-family: var(--fd); font-size: 22px; font-weight: 600; letter-spacing: .2em; line-height: 1; }
@@ -490,7 +498,7 @@ select { border-radius: 6px; color: var(--accent); }
   <div class="r-center">
     <div class="ring">
       <svg viewBox="0 0 240 240" aria-hidden="true"><circle class="track" cx="120" cy="120" r="112"/><circle class="prog" id="r-ring" cx="120" cy="120" r="112"/></svg>
-      <svg class="ring-over" viewBox="0 0 240 240" aria-hidden="true"><circle class="rail" cx="120" cy="120" r="96.3"/><circle class="rail" cx="120" cy="120" r="100.3"/><path class="t1" id="r-t1"/><path class="t2" id="r-t2"/><path class="t3" id="r-t3"/><g id="r-mark"><path class="mark" d="M120 29L113.5 14.5H126.5Z"/></g></svg>
+      <svg class="ring-over" viewBox="0 0 240 240" aria-hidden="true"><circle class="rail" cx="120" cy="120" r="96.3"/><circle class="rail" cx="120" cy="120" r="100.3"/><path class="t1" id="r-t1"/><path class="t2" id="r-t2"/><path class="t3" id="r-t3"/><text class="r-brand" x="120" y="58">ChronoSport</text><g id="r-nums"></g><g id="r-mark"><path class="mark" d="M120 29L113.5 14.5H126.5Z"/></g></svg>
       <div class="r-time"><div id="r-count" role="timer">0:00</div><div id="r-phase">Préparation</div></div>
     </div>
     <div class="r-sub" id="r-sub"><div class="sub" id="sub-sets"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div><div class="sub" id="sub-prep"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div><div class="sub" id="sub-rest"><svg viewBox="0 0 100 100" aria-hidden="true"></svg></div></div>
@@ -715,9 +723,46 @@ select { border-radius: 6px; color: var(--accent); }
   var actx = null;
   function ensureAudio() {
     try {
-      if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
-      if (actx && actx.state === 'suspended') actx.resume();
+      if (actx && actx.state === 'closed') { actx = null; master = null; }
+      if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { actx = new AC(); master = null; } }
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e2) {}
+      if (actx && actx.state !== 'running') {
+        var pr = actx.resume(); if (pr && pr.catch) pr.catch(function () {});
+        try { var sb = actx.createBuffer(1, 1, 22050), ss = actx.createBufferSource(); ss.buffer = sb; ss.connect(actx.destination); ss.start(0); } catch (e3) {}
+      }
     } catch (e) {}
+  }
+  var master = null;
+  function masterOut() {
+    if (!master && actx) {
+      var c = actx.createDynamicsCompressor();
+      c.threshold.value = -8; c.knee.value = 6; c.ratio.value = 12; c.attack.value = 0.002; c.release.value = 0.1;
+      c.connect(actx.destination); master = c;
+    }
+    return master;
+  }
+  /* Loud square-wave alerts: 'go' (start of effort), 'setEnd' (end of a set), 'end' (end of session). */
+  function alertSound(kind) {
+    if (!settings.sound || !actx) return;
+    var out = masterOut(); if (!out) return;
+    var pats = {
+      go: [[1320, 150, 0], [1320, 150, 220]],
+      setEnd: [[1175, 230, 0], [1175, 230, 330], [1175, 230, 660], [1568, 520, 990]],
+      end: [[880, 200, 0], [1175, 200, 280], [1568, 200, 560], [1175, 200, 840], [1568, 700, 1120]]
+    };
+    var gain = Math.min(1, 0.45 + settings.volume * 0.55) * 0.6;
+    (pats[kind] || []).forEach(function (p) {
+      try {
+        var t0 = actx.currentTime + p[2] / 1000, d = p[1] / 1000;
+        var o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'square'; o.frequency.value = p[0];
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(gain, t0 + 0.008);
+        g.gain.setValueAtTime(gain, t0 + d - 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+        o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.02);
+      } catch (e) {}
+    });
   }
   function tone(freq, ms, delay) {
     if (!settings.sound || !actx) return;
@@ -785,9 +830,9 @@ select { border-radius: 6px; color: var(--accent); }
     $('#r-meta').textContent = meta;
     var nx = run.segs[i + 1];
     $('#r-next').textContent = nx ? 'Ensuite : ' + PHASE_LABEL[nx.type] + ' · ' + fmt(nx.dur) : 'Dernière phase';
-    if (s.type === 'work') { tone(990, 600); vibrate([200]); }
+    if (s.type === 'work') { alertSound('go'); vibrate([200]); }
     else if (s.type === 'prep') { tone(660, 300); }
-    else { tone(520, 450); vibrate([120]); }
+    else { alertSound('setEnd'); vibrate([250, 100, 250, 100, 250]); }
     speak(PHASE_LABEL[s.type]);
   }
   function elapsedTotal() {
@@ -819,6 +864,7 @@ select { border-radius: 6px; color: var(--accent); }
       rem = run.end - performance.now();
     }
     var sec = draw(Math.max(0, rem));
+    if (actx && settings.sound && actx.state !== 'running') soundHint();
     if (sec !== run.lastSec) {
       run.lastSec = sec;
       var cb = settings.countdown;
@@ -837,7 +883,7 @@ select { border-radius: 6px; color: var(--accent); }
     $('#r-count').textContent = '0:00'; ring.style.strokeDashoffset = String(C);
     drawSub(0);
     $('#r-bar').style.width = '100%';
-    tone(880, 250); tone(880, 250, 330); tone(1175, 600, 660); vibrate([300, 100, 300, 100, 500]);
+    alertSound('end'); vibrate([300, 100, 300, 100, 500]);
     speak('Séance terminée');
     logSession(true, run.totalDur);
     $('#r-done-text').textContent = run.w.name + ' · ' + fmt(run.totalDur);
@@ -934,7 +980,7 @@ select { border-radius: 6px; color: var(--accent); }
   bindSetting('#s-voice', 'voice', function (e) { return e.checked; });
   bindSetting('#s-vib', 'vibrate', function (e) { return e.checked; });
   bindSetting('#s-wake', 'wake', function (e) { return e.checked; });
-  $('#s-test').addEventListener('click', function () { ensureAudio(); tone(880, 400); vibrate([150]); speak('Test'); });
+  $('#s-test').addEventListener('click', function () { ensureAudio(); alertSound('setEnd'); vibrate([150]); speak('Test'); });
   $$('#s-theme button').forEach(function (b) {
     b.addEventListener('click', function () { settings.theme = b.dataset.v; save('tempo.settings', settings); applyTheme(); syncSettings(); });
   });
@@ -975,6 +1021,7 @@ select { border-radius: 6px; color: var(--accent); }
       s += '<line class="tick' + (major ? ' major' : '') + '" x1="' + p1[0].toFixed(2) + '" y1="' + p1[1].toFixed(2) + '" x2="' + p2[0].toFixed(2) + '" y2="' + p2[1].toFixed(2) + '"/>';
     }
     for (m = 0; m < 60; m += 5) { p1 = polar(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
+    s += '<text class="brand-mark" x="200" y="118">ChronoSport</text>';
     s += '<line class="hand" id="d-hand" x1="200" y1="200" x2="200" y2="162"/><circle class="hub" cx="200" cy="200" r="13"/>';
     dsvg.innerHTML = s;
     var chips = $('#d-chips'); chips.textContent = '';
@@ -1025,7 +1072,7 @@ select { border-radius: 6px; color: var(--accent); }
   function dialFinish() {
     clearInterval(dial.timer); dial.timer = null;
     dial.state = 'done'; dial.rem = 0;
-    tone(880, 250); tone(880, 250, 330); tone(1175, 600, 660); vibrate([300, 100, 300, 100, 500]);
+    alertSound('end'); vibrate([300, 100, 300, 100, 500]);
     speak('Minuteur terminé');
     dialLog(true, dial.min * 60); releaseWake(); renderDial();
   }
@@ -1161,6 +1208,7 @@ select { border-radius: 6px; color: var(--accent); }
     }
     s += '<circle class="rail" cx="200" cy="200" r="154"/><circle class="rail" cx="200" cy="200" r="160"/><path class="t1" d="' + d1 + '"/><path class="t2" d="' + d2 + '"/><path class="t3" d="' + d3 + '"/>';
     for (m = 0; m < 60; m += 5) { p1 = cw(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
+    s += '<text class="brand-mark" x="200" y="118">ChronoSport</text>';
     s += '<g id="sw-hand"><line class="sw-hand-line" x1="200" y1="224" x2="200" y2="66"/><circle class="sw-hub" cx="200" cy="200" r="9"/><circle class="sw-pin" cx="200" cy="200" r="3"/></g>';
     $('#sw-svg').innerHTML = s;
   }
@@ -1175,6 +1223,12 @@ select { border-radius: 6px; color: var(--accent); }
       if (i % 20 === 0) d3 += seg; else if (i % 4 === 0) d2 += seg; else d1 += seg;
     }
     $('#r-t1').setAttribute('d', d1); $('#r-t2').setAttribute('d', d2); $('#r-t3').setAttribute('d', d3);
+    var nums = '', n, an;
+    for (n = 0; n < 60; n += 5) {
+      an = n * 6 * Math.PI / 180;
+      nums += '<text class="r-num' + (n % 15 === 0 ? ' q' : '') + '" x="' + (120 + 129 * Math.sin(an)).toFixed(2) + '" y="' + (120 - 129 * Math.cos(an)).toFixed(2) + '">' + n + '</text>';
+    }
+    $('#r-nums').innerHTML = nums;
   }
   var SUB = { lit: -1, total: 1, n: 1 };
   function gauge(key, label, n, major) {
@@ -1219,6 +1273,15 @@ select { border-radius: 6px; color: var(--accent); }
     $('#sub-prep').classList.toggle('active', isPrep);
     $('#sub-rest').classList.toggle('active', isRest);
   }
+
+  /* ---------- audio recovery after the app was in the background ---------- */
+  var lastHint = 0;
+  function soundHint() {
+    var t = Date.now(); if (t - lastHint < 8000) return; lastHint = t;
+    toast('Touchez l’écran pour réactiver le son');
+  }
+  ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio, true); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) ensureAudio(); });
 
   /* ---------- init ---------- */
   applyTheme(); syncSettings(); renderHome(); renderHistory(); buildDial(); renderDial(); buildSWDial(); renderSW(); buildRunnerTrack();
