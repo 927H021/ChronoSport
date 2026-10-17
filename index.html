@@ -408,6 +408,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .ring tspan.wm-c, .ring tspan.wm-s { stroke-width: 1.6; }
 .ring .r-brand { font-size: 21px; }
 
+#sw-svg .lc-face { fill: #0b0c0f; stroke: #2a2d33; stroke-width: 1.5; }
+#sw-svg .lc-tick { stroke: rgba(255,255,255,.4); stroke-width: 1.2; }
+#sw-svg .lc-hand { stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; }
+#sw-svg .lc-pin { fill: var(--accent); }
+#sw-svg .lc-lbl { fill: rgba(235,235,245,.6); font: 600 7px var(--fd); letter-spacing: .16em; text-anchor: middle; }
+#sw-svg .lc-val { fill: #fff; font: 600 15px var(--fd); text-anchor: middle; }
 /* ---- timer dial: seconds track and hand, keypad ---- */
 #d-svg .brand-mark { font-size: 32px; }
 .dial .dt1, .dial .dt2, .dial .dt3, .dial .drail { fill: none; }
@@ -791,6 +797,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var pats = {
       go: [[1320, 150, 0], [1320, 150, 220]],
       setEnd: [[1175, 230, 0], [1175, 230, 330], [1175, 230, 660], [1568, 520, 990]],
+      minute: [[1568, 130, 0], [2093, 260, 170]],
       end: [[880, 200, 0], [1175, 200, 280], [1568, 200, 560], [1175, 200, 840], [1568, 700, 1120]]
     };
     var gain = Math.min(1, 0.45 + settings.volume * 0.55) * 0.6;
@@ -1243,7 +1250,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
 
   /* ---------- stopwatch ---------- */
-  var sw = { state: 'idle', base: 0, t0: 0, lastLap: 0, laps: [], timer: null };
+  var sw = { state: 'idle', base: 0, t0: 0, lastLap: 0, laps: [], timer: null, lastMin: 0 };
   function fmtSW(ms) {
     var cs = Math.floor(ms / 10) % 100, s = Math.floor(ms / 1000) % 60, m = Math.floor(ms / 60000) % 60, h = Math.floor(ms / 3600000);
     return (h ? h + ':' + pad2(m) : pad2(m)) + ':' + pad2(s) + ',' + pad2(cs);
@@ -1252,10 +1259,16 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function swTick() {
     var e = swElapsed();
     $('#sw-time').textContent = fmtSW(e);
+    if (sw.state === 'running') {
+      var mn = Math.floor(e / 60000);
+      if (mn > sw.lastMin) { sw.lastMin = mn; if (document.visibilityState === 'visible' || true) { ensureAudio(); alertSound('minute'); vibrate([120]); } }
+    }
     var hd = $('#sw-hand'); if (hd) hd.setAttribute('transform', 'rotate(' + ((e / 1000) % 60 * 6).toFixed(2) + ' 200 200)');
     var c = $('#sw-cur'); if (c) c.textContent = fmtSW(e - sw.lastLap);
   }
   function renderSW() {
+    var lc = $('#sw-lapcount'), lh = $('#sw-lc-hand');
+    if (lc) { lc.textContent = String(sw.laps.length); lh.setAttribute('transform', 'rotate(' + ((sw.laps.length % 12) * 30) + ' 200 278)'); }
     var running = sw.state === 'running';
     var tg = $('#sw-toggle'), lp = $('#sw-lap');
     tg.textContent = running ? 'Arrêter' : (sw.state === 'paused' ? 'Reprendre' : 'Démarrer');
@@ -1287,7 +1300,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       sw.base = swElapsed(); sw.state = 'paused';
       clearInterval(sw.timer); sw.timer = null; releaseWake();
     } else {
-      sw.t0 = Date.now(); sw.state = 'running';
+      sw.t0 = Date.now(); sw.state = 'running'; sw.lastMin = Math.floor(sw.base / 60000);
       clearInterval(sw.timer); sw.timer = setInterval(swTick, 33); acquireWake();
     }
     persistLive(); keepAliveCheck();
@@ -1336,6 +1349,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     s += '<circle class="rail" cx="200" cy="200" r="154"/><circle class="rail" cx="200" cy="200" r="160"/><path class="t1" d="' + d1 + '"/><path class="t2" d="' + d2 + '"/><path class="t3" d="' + d3 + '"/>';
     for (m = 0; m < 60; m += 5) { p1 = cw(182, m); s += '<text x="' + p1[0].toFixed(2) + '" y="' + p1[1].toFixed(2) + '">' + m + '</text>'; }
     s += '<text class="brand-mark" x="200" y="118"><tspan class="wm-c">Chrono</tspan><tspan class="wm-s">Sport</tspan></text>';
+    s += '<circle class="lc-face" cx="200" cy="278" r="32"/>';
+    for (k = 0; k < 12; k++) { aa = k * Math.PI / 6; s += '<line class="lc-tick" x1="' + (200 + 25 * Math.sin(aa)).toFixed(2) + '" y1="' + (278 - 25 * Math.cos(aa)).toFixed(2) + '" x2="' + (200 + 29.5 * Math.sin(aa)).toFixed(2) + '" y2="' + (278 - 29.5 * Math.cos(aa)).toFixed(2) + '"/>'; }
+    s += '<text class="lc-lbl" x="200" y="262">TOURS</text><text class="lc-val" id="sw-lapcount" x="200" y="285">0</text>';
+    s += '<line class="lc-hand" id="sw-lc-hand" x1="200" y1="278" x2="200" y2="251"/><circle class="lc-pin" cx="200" cy="278" r="2.5"/>';
     s += '<g id="sw-hand"><line class="sw-hand-line" x1="200" y1="224" x2="200" y2="66"/><circle class="sw-hub" cx="200" cy="200" r="9"/><circle class="sw-pin" cx="200" cy="200" r="3"/></g>';
     $('#sw-svg').innerHTML = s;
   }
@@ -1423,6 +1440,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     }
     if (w && (w.state === 'running' || w.state === 'paused')) {
       sw.state = w.state; sw.base = w.base || 0; sw.t0 = w.t0 || 0; sw.lastLap = w.lastLap || 0; sw.laps = w.laps || [];
+      sw.lastMin = Math.floor(swElapsed() / 60000);
       if (sw.state === 'running') sw.timer = setInterval(swTick, 33);
     }
   }
