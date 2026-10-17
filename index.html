@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="app-version" content="20261017183000">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,6 +17,23 @@
 [hidden]{display:none!important}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 </style>
+<script>
+/* Mise à jour automatique : compare la version publiée à celle de la page ouverte. */
+(function () {
+  var cur = (document.querySelector('meta[name="app-version"]') || {}).content;
+  var busy = false;
+  function check() {
+    if (busy || !cur || !/^https?:/.test(location.protocol)) return; busy = true;
+    fetch(location.pathname + '?nocache=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+      var m = t.match(/<meta name="app-version" content="([^"]+)"/);
+      if (m && m[1] !== cur) { location.replace(location.pathname + '?v=' + m[1]); }
+      busy = false;
+    }).catch(function () { busy = false; });
+  }
+  check();
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+})();
+</script>
 <title>ChronoSport</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
