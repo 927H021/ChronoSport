@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261018060322">
+<meta name="app-version" content="20261018060649">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -916,34 +916,53 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     }
     return master;
   }
-  /* Struck-metal chimes, like a watch repeater: each strike is a bell with inharmonic partials and a
-     long decay. 'go' = one bright strike, 'setEnd' = ascending triple, 'end' = full chime, 'minute' = soft tick. */
-  var BELL = [[1, 1, 1], [2.0, 0.42, 0.62], [2.76, 0.3, 0.42], [5.4, 0.12, 0.2], [8.9, 0.06, 0.1]];
+  /* Gong and cymbal: a low tam-tam built from inharmonic partials with a slow decay, plus a shimmer of
+     filtered noise for the cymbal crash. 'go' = small gong, 'setEnd' = big gong, 'end' = two gongs. */
+  var GONG = [[1, 1, 1], [1.47, .8, .85], [1.98, .65, .7], [2.55, .5, .55], [3.21, .38, .42], [4.09, .28, .3], [5.3, .2, .2], [6.9, .12, .12]];
+  var noiseBuf = null;
+  function getNoise() {
+    if (!noiseBuf) {
+      noiseBuf = actx.createBuffer(1, Math.floor(actx.sampleRate * 2), actx.sampleRate);
+      var d = noiseBuf.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
   function alertSound(kind, delaySec) {
     var nodes = [];
     if (!settings.sound || !actx) return nodes;
     var out = masterOut(); if (!out) return nodes;
-    /* [frequency Hz, decay ms, start ms, level] */
+    /* [fundamental Hz, decay ms, start ms, level, shimmer level] */
     var pats = {
-      go: [[1760, 1100, 0, 1]],
-      setEnd: [[1319, 1300, 0, 1], [1568, 1300, 300, 1], [2093, 2200, 600, 1.1]],
-      end: [[1047, 1400, 0, 1], [1319, 1400, 330, 1], [1568, 1400, 660, 1], [2093, 1600, 990, 1.05], [1568, 1800, 1500, 1], [2093, 3200, 1950, 1.15]],
-      minute: [[1568, 700, 0, 0.55]]
+      go: [[294, 1800, 0, .8, .35]],
+      setEnd: [[196, 4200, 0, 1, .9]],
+      end: [[196, 4200, 0, 1, .9], [165, 6500, 1500, 1.1, 1]],
+      minute: [[262, 1100, 0, .45, .1]]
     };
-    var gain = Math.min(1, 0.45 + settings.volume * 0.55) * 0.8;
+    var gain = Math.min(1, 0.45 + settings.volume * 0.55) * 0.5;
     (pats[kind] || []).forEach(function (p) {
       var t0 = actx.currentTime + (delaySec || 0) + p[2] / 1000, d = p[1] / 1000;
-      BELL.forEach(function (pt) {
+      GONG.forEach(function (pt) {
         try {
           var o = actx.createOscillator(), g = actx.createGain(), dd = d * pt[2], peak = gain * p[3] * pt[1];
-          o.type = 'sine'; o.frequency.value = p[0] * pt[0];
+          o.type = 'sine';
+          o.frequency.setValueAtTime(p[0] * pt[0] * 1.012, t0);
+          o.frequency.exponentialRampToValueAtTime(p[0] * pt[0], t0 + 0.6);
           g.gain.setValueAtTime(0.0001, t0);
-          g.gain.exponentialRampToValueAtTime(peak, t0 + 0.004);
+          g.gain.exponentialRampToValueAtTime(peak, t0 + 0.012);
           g.gain.exponentialRampToValueAtTime(0.0001, t0 + dd);
           o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dd + 0.05);
           nodes.push(o);
         } catch (e) {}
       });
+      try {
+        var ns = actx.createBufferSource(), hp = actx.createBiquadFilter(), ng = actx.createGain(), nd = Math.min(1.9, d * 0.45);
+        ns.buffer = getNoise(); hp.type = 'highpass'; hp.frequency.value = 2600;
+        ng.gain.setValueAtTime(0.0001, t0);
+        ng.gain.exponentialRampToValueAtTime(gain * p[4] * 0.55, t0 + 0.01);
+        ng.gain.exponentialRampToValueAtTime(0.0001, t0 + nd);
+        ns.connect(hp); hp.connect(ng); ng.connect(out); ns.start(t0); ns.stop(t0 + nd + 0.05);
+        nodes.push(ns);
+      } catch (e) {}
     });
     return nodes;
   }
