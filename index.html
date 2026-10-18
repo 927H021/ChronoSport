@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261017203406">
+<meta name="app-version" content="20261018060322">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -916,30 +916,34 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     }
     return master;
   }
-  /* Loud square-wave alerts: 'go' (start of effort), 'setEnd' (end of a set), 'end' (end of session). */
+  /* Struck-metal chimes, like a watch repeater: each strike is a bell with inharmonic partials and a
+     long decay. 'go' = one bright strike, 'setEnd' = ascending triple, 'end' = full chime, 'minute' = soft tick. */
+  var BELL = [[1, 1, 1], [2.0, 0.42, 0.62], [2.76, 0.3, 0.42], [5.4, 0.12, 0.2], [8.9, 0.06, 0.1]];
   function alertSound(kind, delaySec) {
     var nodes = [];
     if (!settings.sound || !actx) return nodes;
     var out = masterOut(); if (!out) return nodes;
+    /* [frequency Hz, decay ms, start ms, level] */
     var pats = {
-      go: [[1320, 150, 0], [1320, 150, 220]],
-      setEnd: [[1175, 230, 0], [1175, 230, 330], [1175, 230, 660], [1568, 520, 990]],
-      minute: [[1568, 130, 0], [2093, 260, 170]],
-      end: [[880, 200, 0], [1175, 200, 280], [1568, 200, 560], [1175, 200, 840], [1568, 700, 1120]]
+      go: [[1760, 1100, 0, 1]],
+      setEnd: [[1319, 1300, 0, 1], [1568, 1300, 300, 1], [2093, 2200, 600, 1.1]],
+      end: [[1047, 1400, 0, 1], [1319, 1400, 330, 1], [1568, 1400, 660, 1], [2093, 1600, 990, 1.05], [1568, 1800, 1500, 1], [2093, 3200, 1950, 1.15]],
+      minute: [[1568, 700, 0, 0.55]]
     };
-    var gain = Math.min(1, 0.45 + settings.volume * 0.55) * 0.6;
+    var gain = Math.min(1, 0.45 + settings.volume * 0.55) * 0.8;
     (pats[kind] || []).forEach(function (p) {
-      try {
-        var t0 = actx.currentTime + (delaySec || 0) + p[2] / 1000, d = p[1] / 1000;
-        var o = actx.createOscillator(), g = actx.createGain();
-        o.type = 'square'; o.frequency.value = p[0];
-        g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(gain, t0 + 0.008);
-        g.gain.setValueAtTime(gain, t0 + d - 0.03);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
-        o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.02);
-        nodes.push(o);
-      } catch (e) {}
+      var t0 = actx.currentTime + (delaySec || 0) + p[2] / 1000, d = p[1] / 1000;
+      BELL.forEach(function (pt) {
+        try {
+          var o = actx.createOscillator(), g = actx.createGain(), dd = d * pt[2], peak = gain * p[3] * pt[1];
+          o.type = 'sine'; o.frequency.value = p[0] * pt[0];
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(peak, t0 + 0.004);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + dd);
+          o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dd + 0.05);
+          nodes.push(o);
+        } catch (e) {}
+      });
     });
     return nodes;
   }
