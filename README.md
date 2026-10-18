@@ -5,7 +5,7 @@ Une seule page HTML, sans dépendance ni étape de compilation.
 
 ## Fonctions
 
-- **Minuteurs d'intervalles** : préparation, effort, repos, séries, cycles, repos entre cycles et retour au calme. Six modèles fournis (Tabata, HIIT 40/20, Circuit training, Gainage, Boxe 3 min, Pomodoro), modifiables, duplicables et supprimables.
+- **Minuteurs d'intervalles** : préparation, effort, repos, séries, cycles, repos entre cycles et retour au calme. Quatre modèles fournis (HIIT 40/20, Circuit training, Gainage, Boxe 3 min), modifiables, duplicables et supprimables.
 - **Séance plein écran** : grand décompte, anneau de progression coloré selon la phase, pause, phase précédente et suivante.
 - **Chrono** : minuteur à cadran (de 1 à 60 minutes, réglage au doigt) et chronomètre avec aiguille des secondes et tours (le plus rapide en vert, le plus lent en rouge).
 - **Alertes** : bips, compte à rebours sonore, annonce vocale en français, vibration, écran maintenu allumé.

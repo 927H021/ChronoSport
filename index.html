@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261018081128">
+<meta name="app-version" content="20261018081326">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -707,16 +707,22 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
   var SEEDS = function () {
     return [
-      { id: uid(), name: 'Tabata', prep: 10, work: 20, rest: 10, sets: 8, cycles: 1, cycleRest: 0, cool: 0 },
       { id: uid(), name: 'HIIT 40/20', prep: 10, work: 40, rest: 20, sets: 10, cycles: 1, cycleRest: 0, cool: 60 },
       { id: uid(), name: 'Circuit training', prep: 15, work: 45, rest: 15, sets: 6, cycles: 3, cycleRest: 90, cool: 120 },
       { id: uid(), name: 'Gainage', prep: 5, work: 45, rest: 15, sets: 5, cycles: 1, cycleRest: 0, cool: 0 },
-      { id: uid(), name: 'Boxe 3 min', prep: 10, work: 180, rest: 60, sets: 6, cycles: 1, cycleRest: 0, cool: 0 },
-      { id: uid(), name: 'Pomodoro', prep: 0, work: 1500, rest: 300, sets: 4, cycles: 1, cycleRest: 0, cool: 0 }
+      { id: uid(), name: 'Boxe 3 min', prep: 10, work: 180, rest: 60, sets: 6, cycles: 1, cycleRest: 0, cool: 0 }
     ];
   };
   var DEFAULTS = { sound: true, volume: 0.7, countdown: 3, voice: false, vibrate: true, wake: true, theme: 'dark' };
   var workouts = load('tempo.workouts', null) || SEEDS();
+  /* one-time cleanup: drop the removed built-in Tabata and Pomodoro (only if still unchanged) */
+  if (!load('tempo.noTabata', false)) {
+    workouts = workouts.filter(function (w) {
+      return !((w.name === 'Tabata' && w.prep === 10 && w.work === 20 && w.rest === 10 && w.sets === 8) ||
+               (w.name === 'Pomodoro' && w.work === 1500 && w.rest === 300 && w.sets === 4));
+    });
+    save('tempo.workouts', workouts); save('tempo.noTabata', true);
+  }
   var settings = Object.assign({}, DEFAULTS, load('tempo.settings', {}));
   if (settings.theme === 'auto' && !load('tempo.darkdefault', false)) { settings.theme = 'dark'; save('tempo.settings', settings); }
   save('tempo.darkdefault', true);
