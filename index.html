@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261022104153">
+<meta name="app-version" content="20261022104602">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1113,14 +1113,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     return sc;
   }
   function pickVoice() {
-    var list = frVoices(); if (!list.length) return null;
-    if (settings.voiceName) { for (var i = 0; i < list.length; i++) if (list[i].name === settings.voiceName) return list[i]; }
-    return list.slice().sort(function (a, b) { return voiceScore(b) - voiceScore(a); })[0];
+    var list = frVoices(); if (!list.length || !settings.voiceName) return null;
+    for (var i = 0; i < list.length; i++) if (list[i].name === settings.voiceName) return list[i];
+    return null;
   }
   function fillVoiceList() {
     var sel = $('#s-voicepick'); if (!sel) return;
     var list = frVoices(); sel.textContent = '';
-    var auto = el('option', '', 'Automatique (meilleure voix)'); auto.value = ''; sel.appendChild(auto);
+    var auto = el('option', '', 'Automatique (voix du système)'); auto.value = ''; sel.appendChild(auto);
     list.forEach(function (v) { var o = el('option', '', v.name); o.value = v.name; sel.appendChild(o); });
     sel.value = settings.voiceName || '';
     $('#row-voicepick').hidden = !list.length;
@@ -1131,21 +1131,19 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     u.lang = 'fr-FR'; u.volume = Math.min(1, settings.volume + 0.2);
     if (voice) { u.voice = voice; u.lang = voice.lang; }
     if (settings.voiceStyle === 'natural') { u.rate = 1.0; u.pitch = 1.0; }
-    else { u.rate = 0.7; u.pitch = 1.35; u.volume = 1; }
+    else { u.rate = 0.85; u.pitch = 1.2; u.volume = 1; }
     var started = false;
     u.onstart = function () { started = true; };
     /* if the chosen voice fails or stays silent, fall back to the system default voice */
     u.onerror = function (ev) { if (ev && /interrupted|canceled/i.test(ev.error || '')) return; if (voice && retry) { try { window.speechSynthesis.cancel(); } catch (e) {} say(text, null, false); } };
     window.speechSynthesis.speak(u);
-    if (voice && retry) setTimeout(function () { if (!started) { try { window.speechSynthesis.cancel(); } catch (e) {} say(text, null, false); } }, 1800);
   }
   function speak(text) {
     if (!settings.voice || !text) return;
     try {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      try { window.speechSynthesis.resume(); } catch (e0) {}
-      setTimeout(function () { try { say(text, pickVoice(), true); } catch (e) {} }, 60);
+      say(text, pickVoice(), true);
     } catch (e) {}
   }
   /* The voice only announces the name of the chosen timer when an effort starts. */
@@ -1178,6 +1176,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     buildSubs(w);
     keepAliveCheck();
     enterSeg(0, 0);
+    if (segs[0].type !== 'work') speak(w.name);
     drawSub(segs[0].dur * 1000);
     clearInterval(loop); loop = setInterval(tick, 100);
   }
