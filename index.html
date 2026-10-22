@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261022103918">
+<meta name="app-version" content="20261022104153">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1135,7 +1135,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var started = false;
     u.onstart = function () { started = true; };
     /* if the chosen voice fails or stays silent, fall back to the system default voice */
-    u.onerror = function () { if (voice && retry) { try { window.speechSynthesis.cancel(); } catch (e) {} say(text, null, false); } };
+    u.onerror = function (ev) { if (ev && /interrupted|canceled/i.test(ev.error || '')) return; if (voice && retry) { try { window.speechSynthesis.cancel(); } catch (e) {} say(text, null, false); } };
     window.speechSynthesis.speak(u);
     if (voice && retry) setTimeout(function () { if (!started) { try { window.speechSynthesis.cancel(); } catch (e) {} say(text, null, false); } }, 1800);
   }
@@ -1784,8 +1784,19 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var t = Date.now(); if (t - lastHint < 8000) return; lastHint = t;
     toast('Touchez l’écran pour réactiver le son');
   }
-  ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio, true); });
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) { ensureAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
+  /* iOS only lets the page speak after a speech was started from a tap: do it silently on the first touch. */
+  var speechUnlocked = false;
+  function unlockSpeech() {
+    if (speechUnlocked || !settings.voice) return;
+    try {
+      if (!window.speechSynthesis) return;
+      var u = new SpeechSynthesisUtterance('.'); u.volume = 0; u.lang = 'fr-FR';
+      window.speechSynthesis.speak(u); speechUnlocked = true;
+    } catch (e) {}
+  }
+  ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio, true); document.addEventListener(ev, unlockSpeech, true); });
+  $('#s-voice').addEventListener('change', function () { speechUnlocked = false; unlockSpeech(); if (this.checked && !window.speechSynthesis) toast('Voix indisponible sur ce navigateur'); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) speechUnlocked = false; if (!document.hidden) { ensureAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
 
   /* ---------- init ---------- */
   applyTheme(); syncSettings(); renderHome(); renderHistory(); buildDial(); buildKeypad(); buildSWDial(); buildRunnerTrack(); restoreLive(); renderDial(); renderSW();
