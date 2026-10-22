@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261022102443">
+<meta name="app-version" content="20261022103134">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -460,6 +460,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .row .btn.ghost { color: var(--accent); }
 .row .btn.danger { color: var(--red); }
 .row .lbl { white-space: normal; }
+.row[hidden] { display: none; }
+#s-theme { flex: none; } #s-theme button { padding: 0 9px; font-size: 14px; letter-spacing: .04em; }
+.row .lbl { margin-right: 8px; }
 /* ---- compact timer layout ---- */
 #v-dial .dial, .dial { width: min(100%, 400px, 52vh); }
 .dial-title { min-height: 36px; }
@@ -591,8 +594,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><label for="s-volume">Volume</label><input type="range" id="s-volume" min="0.1" max="1" step="0.05"></div>
       <div class="row"><label for="s-count">Compte à rebours<small>Bips avant la fin de chaque phase</small></label>
         <select id="s-count"><option value="0">Aucun</option><option value="3">3 dernières s</option><option value="5">5 dernières s</option><option value="10">10 dernières s</option></select></div>
-      <div class="row"><label for="s-voice">Annonce vocale<small>Lit le nom de la phase à voix haute</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
+      <div class="row"><label for="s-voice">Annonce vocale<small>Coach : nom du minuteur, encouragements</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
+      <div class="row" id="row-voicepick" hidden><label for="s-voicepick">Voix du coach<small>Choisissez la voix française la plus naturelle</small></label><select id="s-voicepick"></select></div>
       <div class="row"><label for="s-vib">Vibration<small>Selon l'appareil</small></label><span class="switch"><input type="checkbox" id="s-vib"><i></i></span></div>
+      <div class="row"><label for="s-alert">Son d'alerte<small>Début d'effort, fin de série et de séance</small></label>
+        <select id="s-alert"></select></div>
       <div class="row"><span class="lbl">Tester le son</span><button class="btn ghost" type="button" id="s-test">Bip</button></div>
     </div>
     <div class="section-title">Affichage</div>
@@ -713,7 +719,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       { id: uid(), name: 'Boxe 3 min', prep: 10, work: 180, rest: 60, sets: 6, cycles: 1, cycleRest: 0, cool: 0 }
     ];
   };
-  var DEFAULTS = { sound: true, volume: 0.7, countdown: 3, voice: false, vibrate: true, wake: true, theme: 'dark' };
+  var DEFAULTS = { sound: true, volume: 0.7, countdown: 3, voice: false, vibrate: true, wake: true, theme: 'dark', alert: 'gong', voiceName: '' };
   var workouts = load('tempo.workouts', null) || SEEDS();
   /* one-time cleanup: drop the removed built-in Tabata and Pomodoro (only if still unchanged) */
   if (!load('tempo.noTabata', false)) {
@@ -931,9 +937,38 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     }
     return master;
   }
-  /* Gong and cymbal: a low tam-tam built from inharmonic partials with a slow decay, plus a shimmer of
-     filtered noise for the cymbal crash. 'go' = small gong, 'setEnd' = big gong, 'end' = two gongs. */
-  var GONG = [[1, 1, 1], [1.47, .8, .85], [1.98, .65, .7], [2.55, .5, .55], [3.21, .38, .42], [4.09, .28, .3], [5.3, .2, .2], [6.9, .12, .12]];
+  /* ---------- alert sounds ---------- */
+  var SOUND_LIST = [
+    ['gong', 'Gong'], ['ring', 'Ring de boxe'], ['horn', 'Klaxon de stade'], ['whistle', 'Sifflet de coach'],
+    ['watch', 'Montre sport'], ['marimba', 'Marimba'], ['synth', 'Synthwave']
+  ];
+  /* helpers: all take an absolute start time t and push every source into nodes so a scheduled alarm can be cancelled */
+  function env(g, t, peak, atk, hold, rel) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), t + atk);
+    if (hold > atk) g.gain.setValueAtTime(Math.max(0.0002, peak), t + hold);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + hold + rel);
+  }
+  function note(o) {
+    /* o: type, f, f2 (glide end), t, atk, hold, rel, peak, out, nodes, filter(freq), detune, vib [rate, depth] */
+    var osc = actx.createOscillator(), g = actx.createGain(), last = g;
+    osc.type = o.type || 'sine';
+    osc.frequency.setValueAtTime(o.f, o.t);
+    if (o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, o.t + (o.hold || 0.1));
+    if (o.detune) osc.detune.value = o.detune;
+    env(g, o.t, o.peak, o.atk || 0.005, o.hold || 0, o.rel || 0.2);
+    var end = o.t + (o.hold || 0) + (o.rel || 0.2) + 0.05;
+    if (o.vib) {
+      var lfo = actx.createOscillator(), lg = actx.createGain();
+      lfo.frequency.value = o.vib[0]; lg.gain.value = o.vib[1];
+      lfo.connect(lg); lg.connect(osc.frequency); lfo.start(o.t); lfo.stop(end); o.nodes.push(lfo);
+    }
+    if (o.filter) {
+      var fl = actx.createBiquadFilter(); fl.type = 'lowpass'; fl.frequency.value = o.filter; fl.Q.value = o.q || 0.7;
+      osc.connect(fl); fl.connect(g);
+    } else osc.connect(g);
+    g.connect(o.out); osc.start(o.t); osc.stop(end); o.nodes.push(osc);
+  }
   var noiseBuf = null;
   function getNoise() {
     if (!noiseBuf) {
@@ -942,43 +977,109 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     }
     return noiseBuf;
   }
-  function alertSound(kind, delaySec) {
+  function noiseBurst(t, dur, peak, hpf, out, nodes, bpf) {
+    try {
+      var ns = actx.createBufferSource(), fl = actx.createBiquadFilter(), g = actx.createGain();
+      ns.buffer = getNoise(); fl.type = bpf ? 'bandpass' : 'highpass'; fl.frequency.value = hpf; if (bpf) fl.Q.value = 1.2;
+      env(g, t, peak, 0.01, 0, dur);
+      ns.connect(fl); fl.connect(g); g.connect(out); ns.start(t); ns.stop(t + dur + 0.05); nodes.push(ns);
+    } catch (e) {}
+  }
+  var GONG = [[1, 1, 1], [1.47, .8, .85], [1.98, .65, .7], [2.55, .5, .55], [3.21, .38, .42], [4.09, .28, .3], [5.3, .2, .2], [6.9, .12, .12]];
+  function gongStrike(t, f, d, lv, sh, gain, out, nodes) {
+    GONG.forEach(function (pt) {
+      try {
+        var o = actx.createOscillator(), g = actx.createGain(), dd = d * pt[2];
+        o.frequency.setValueAtTime(f * pt[0] * 1.012, t); o.frequency.exponentialRampToValueAtTime(f * pt[0], t + 0.6);
+        env(g, t, gain * lv * pt[1], 0.012, 0, dd);
+        o.connect(g); g.connect(out); o.start(t); o.stop(t + dd + 0.05); nodes.push(o);
+      } catch (e) {}
+    });
+    noiseBurst(t, Math.min(1.9, d * 0.45), gain * sh * 0.55, 2600, out, nodes);
+  }
+  function bellStrike(t, f, d, lv, gain, out, nodes) {
+    [[1, 1, 1], [2.01, .55, .6], [3.2, .4, .4], [4.17, .3, .3], [5.43, .2, .2]].forEach(function (pt) {
+      try {
+        var o = actx.createOscillator(), g = actx.createGain(), dd = d * pt[2];
+        o.frequency.value = f * pt[0]; env(g, t, gain * lv * pt[1], 0.003, 0, dd);
+        o.connect(g); g.connect(out); o.start(t); o.stop(t + dd + 0.05); nodes.push(o);
+      } catch (e) {}
+    });
+    noiseBurst(t, 0.12, gain * lv * 0.35, 4000, out, nodes);
+  }
+  function whistle(t, dur, gain, out, nodes) {
+    note({ type: 'sine', f: 2850, t: t, atk: 0.015, hold: dur, rel: 0.04, peak: gain * 0.9, out: out, nodes: nodes, vib: [34, 150] });
+    note({ type: 'sine', f: 5700, t: t, atk: 0.015, hold: dur, rel: 0.04, peak: gain * 0.25, out: out, nodes: nodes, vib: [34, 260] });
+    noiseBurst(t, dur + 0.04, gain * 0.35, 3200, out, nodes, true);
+  }
+  function horn(t, dur, gain, out, nodes) {
+    [[233, 0], [293.7, 6], [349.2, -5], [466, 3]].forEach(function (n) {
+      note({ type: 'sawtooth', f: n[0], f2: n[0] * 1.0, t: t, atk: 0.02, hold: dur, rel: 0.12, peak: gain * 0.5, out: out, nodes: nodes, filter: 1600, detune: n[1] });
+    });
+  }
+  /* each sound plays one event ('go', 'setEnd', 'end', 'minute') starting at t */
+  var SOUNDS = {
+    gong: function (k, t, g, out, n) {
+      if (k === 'go') gongStrike(t, 294, 1.8, .8, .35, g * 0.5, out, n);
+      else if (k === 'setEnd') gongStrike(t, 196, 4.2, 1, .9, g * 0.5, out, n);
+      else if (k === 'end') { gongStrike(t, 196, 4.2, 1, .9, g * 0.5, out, n); gongStrike(t + 1.5, 165, 6.5, 1.1, 1, g * 0.5, out, n); }
+      else gongStrike(t, 262, 1.1, .45, .1, g * 0.5, out, n);
+    },
+    ring: function (k, t, g, out, n) {
+      g *= 0.8;
+      if (k === 'go') bellStrike(t, 1040, 1.6, 1, g, out, n);
+      else if (k === 'setEnd') [0, .26, .52].forEach(function (d, i) { bellStrike(t + d, 1040, i === 2 ? 2.2 : 1.4, 1, g, out, n); });
+      else if (k === 'end') [0, .24, .48, .72, .96, 1.2].forEach(function (d, i) { bellStrike(t + d, 1040, i === 5 ? 3 : 1.2, 1, g, out, n); });
+      else bellStrike(t, 1040, .8, .5, g, out, n);
+    },
+    horn: function (k, t, g, out, n) {
+      g *= 0.9;
+      if (k === 'go') horn(t, .32, g, out, n);
+      else if (k === 'setEnd') horn(t, .95, g, out, n);
+      else if (k === 'end') { horn(t, .45, g, out, n); horn(t + .7, 1.5, g, out, n); }
+      else horn(t, .12, g * .5, out, n);
+    },
+    whistle: function (k, t, g, out, n) {
+      if (k === 'go') whistle(t, .28, g, out, n);
+      else if (k === 'setEnd') { whistle(t, .2, g, out, n); whistle(t + .32, .2, g, out, n); whistle(t + .64, .75, g, out, n); }
+      else if (k === 'end') { whistle(t, .25, g, out, n); whistle(t + .4, .25, g, out, n); whistle(t + .8, 1.1, g, out, n); }
+      else whistle(t, .1, g * .6, out, n);
+    },
+    watch: function (k, t, g, out, n) {
+      function b(d, f, len) { note({ type: 'triangle', f: f, t: t + d, atk: 0.004, hold: len, rel: 0.03, peak: g * 0.9, out: out, nodes: n }); note({ type: 'sine', f: f * 2, t: t + d, atk: 0.004, hold: len, rel: 0.03, peak: g * 0.25, out: out, nodes: n }); }
+      if (k === 'go') { b(0, 1760, .09); b(.16, 1760, .09); }
+      else if (k === 'setEnd') { b(0, 1568, .12); b(.2, 1976, .12); b(.4, 2349, .3); }
+      else if (k === 'end') { b(0, 1568, .12); b(.2, 1976, .12); b(.4, 2349, .12); b(.6, 1976, .12); b(.8, 2349, .12); b(1.0, 2637, .55); }
+      else b(0, 1568, .06);
+    },
+    marimba: function (k, t, g, out, n) {
+      function m(d, f, len) {
+        note({ type: 'sine', f: f, t: t + d, atk: 0.003, hold: 0, rel: len, peak: g * 0.9, out: out, nodes: n });
+        note({ type: 'sine', f: f * 4, t: t + d, atk: 0.002, hold: 0, rel: len * .18, peak: g * 0.35, out: out, nodes: n });
+      }
+      if (k === 'go') { m(0, 784, .5); m(.14, 1047, .6); }
+      else if (k === 'setEnd') { m(0, 659, .55); m(.15, 784, .55); m(.3, 988, .55); m(.45, 1319, 1.1); }
+      else if (k === 'end') { [523, 659, 784, 1047, 1319, 1047, 1319, 1568].forEach(function (f, i) { m(i * .14, f, i === 7 ? 1.8 : .6); }); }
+      else m(0, 784, .4);
+    },
+    synth: function (k, t, g, out, n) {
+      function s(d, f, len, last) {
+        note({ type: 'sawtooth', f: f, t: t + d, atk: 0.008, hold: len, rel: last ? .5 : .08, peak: g * 0.55, out: out, nodes: n, filter: 2600, detune: -7 });
+        note({ type: 'square', f: f * 2, t: t + d, atk: 0.008, hold: len, rel: last ? .5 : .08, peak: g * 0.18, out: out, nodes: n, filter: 3200, detune: 7 });
+      }
+      if (k === 'go') { s(0, 440, .09); s(.11, 659, .16, true); }
+      else if (k === 'setEnd') { s(0, 440, .1); s(.12, 523, .1); s(.24, 659, .1); s(.36, 880, .45, true); }
+      else if (k === 'end') { [440, 523, 659, 880, 659, 880, 1047].forEach(function (f, i) { s(i * .12, f, .1); }); s(.9, 1319, .8, true); s(.9, 880, .8, true); }
+      else s(0, 880, .06);
+    }
+  };
+  function alertSound(kind, delaySec, forceKind) {
     var nodes = [];
     if (!settings.sound || !actx) return nodes;
     var out = masterOut(); if (!out) return nodes;
-    /* [fundamental Hz, decay ms, start ms, level, shimmer level] */
-    var pats = {
-      go: [[294, 1800, 0, .8, .35]],
-      setEnd: [[196, 4200, 0, 1, .9]],
-      end: [[196, 4200, 0, 1, .9], [165, 6500, 1500, 1.1, 1]],
-      minute: [[262, 1100, 0, .45, .1]]
-    };
-    var gain = Math.min(1, 0.45 + settings.volume * 0.55) * 0.5;
-    (pats[kind] || []).forEach(function (p) {
-      var t0 = actx.currentTime + (delaySec || 0) + p[2] / 1000, d = p[1] / 1000;
-      GONG.forEach(function (pt) {
-        try {
-          var o = actx.createOscillator(), g = actx.createGain(), dd = d * pt[2], peak = gain * p[3] * pt[1];
-          o.type = 'sine';
-          o.frequency.setValueAtTime(p[0] * pt[0] * 1.012, t0);
-          o.frequency.exponentialRampToValueAtTime(p[0] * pt[0], t0 + 0.6);
-          g.gain.setValueAtTime(0.0001, t0);
-          g.gain.exponentialRampToValueAtTime(peak, t0 + 0.012);
-          g.gain.exponentialRampToValueAtTime(0.0001, t0 + dd);
-          o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + dd + 0.05);
-          nodes.push(o);
-        } catch (e) {}
-      });
-      try {
-        var ns = actx.createBufferSource(), hp = actx.createBiquadFilter(), ng = actx.createGain(), nd = Math.min(1.9, d * 0.45);
-        ns.buffer = getNoise(); hp.type = 'highpass'; hp.frequency.value = 2600;
-        ng.gain.setValueAtTime(0.0001, t0);
-        ng.gain.exponentialRampToValueAtTime(gain * p[4] * 0.55, t0 + 0.01);
-        ng.gain.exponentialRampToValueAtTime(0.0001, t0 + nd);
-        ns.connect(hp); hp.connect(ng); ng.connect(out); ns.start(t0); ns.stop(t0 + nd + 0.05);
-        nodes.push(ns);
-      } catch (e) {}
-    });
+    var gain = Math.min(1, 0.45 + settings.volume * 0.55);
+    var fn = SOUNDS[forceKind || settings.alert] || SOUNDS.gong;
+    try { fn(kind, actx.currentTime + (delaySec || 0), gain, out, nodes); } catch (e) {}
     return nodes;
   }
   function tone(freq, ms, delay) {
@@ -995,14 +1096,60 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     } catch (e) {}
   }
   function vibrate(p) { if (settings.vibrate) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} } }
+  /* ---------- coach voice ---------- */
+  var voiceCache = null;
+  function frVoices() {
+    try { return (window.speechSynthesis.getVoices() || []).filter(function (v) { return /^fr/i.test(v.lang); }); } catch (e) { return []; }
+  }
+  function voiceScore(v) {
+    var n = v.name || '', sc = 0;
+    if (/premium|enhanced|am[eé]lior/i.test(n)) sc += 6;
+    if (/neural|natural|online|wavenet/i.test(n)) sc += 5;
+    if (/google/i.test(n)) sc += 3;
+    if (/thomas|am[eé]lie|audrey|aur[eé]lie|marie|julie|hortense|denise|henri|eloise/i.test(n)) sc += 2;
+    if (/^fr[-_]FR/i.test(v.lang)) sc += 1;
+    if (!v.localService) sc += 1;
+    return sc;
+  }
+  function pickVoice() {
+    var list = frVoices(); if (!list.length) return null;
+    if (settings.voiceName) { for (var i = 0; i < list.length; i++) if (list[i].name === settings.voiceName) return list[i]; }
+    return list.slice().sort(function (a, b) { return voiceScore(b) - voiceScore(a); })[0];
+  }
+  function fillVoiceList() {
+    var sel = $('#s-voicepick'); if (!sel) return;
+    var list = frVoices(); sel.textContent = '';
+    var auto = el('option', '', 'Automatique (meilleure voix)'); auto.value = ''; sel.appendChild(auto);
+    list.forEach(function (v) { var o = el('option', '', v.name); o.value = v.name; sel.appendChild(o); });
+    sel.value = settings.voiceName || '';
+    $('#row-voicepick').hidden = !list.length;
+  }
+  try { if (window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = fillVoiceList; } } catch (e) {}
   function speak(text) {
     if (!settings.voice) return;
     try {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.volume = settings.volume;
+      var u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.volume = Math.min(1, settings.volume + 0.2);
+      var v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; }
+      u.rate = 1.06; u.pitch = 1.05;
       window.speechSynthesis.speak(u);
     } catch (e) {}
+  }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  /* what the coach says when a phase starts */
+  function coachLine(s) {
+    var w = run.w, name = w.name, last = (s.type === 'work' && s.set === w.sets && s.cycle === w.cycles);
+    if (s.type === 'prep') return pick(['Préparez-vous !', 'On se met en place !', 'Respirez, on y est presque !']);
+    if (s.type === 'work') {
+      if (last) return 'Dernière série ! ' + name + ' ! Donne tout !';
+      if (s.set === 1 && s.cycle === 1) return name + ' ! C’est parti !';
+      return name + ' ! ' + pick(['On y va !', 'Allez, on lâche rien !', 'Série ' + s.set + ', donne tout !', 'Plus fort !', 'Tu peux le faire !']);
+    }
+    if (s.type === 'rest') return pick(['Récupère, respire bien.', 'Repos. Respire profondément.', 'Bien joué ! Récupère.', 'Souffle, on repart bientôt.']);
+    if (s.type === 'between') return 'Bravo ! Repos entre les cycles. Hydrate-toi.';
+    if (s.type === 'cool') return 'Retour au calme. Respire doucement, tu as tout donné.';
+    return phaseLabel(s.type);
   }
   var wakeLock = null;
   function acquireWake() {
@@ -1051,7 +1198,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (s.type === 'work') { alertSound('go'); vibrate([200]); }
     else if (s.type === 'prep') { tone(660, 300); }
     else { alertSound('setEnd'); vibrate([250, 100, 250, 100, 250]); }
-    speak(phaseLabel(s.type));
+    run.said = {};
+    speak(coachLine(s));
   }
   function elapsedTotal() {
     var done = 0; for (var k = 0; k < run.i; k++) done += run.segs[k].dur;
@@ -1092,6 +1240,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       run.lastSec = sec;
       var cb = settings.countdown;
       if (cb > 0 && sec <= cb && sec > 0 && run.segs[run.i].dur > cb) { tone(sec === 1 ? 760 : 620, 130); }
+      var cur = run.segs[run.i];
+      if (settings.voice && cur.type === 'work' && run.said) {
+        if (cur.dur >= 40 && !run.said.half && sec === Math.round(cur.dur / 2)) { run.said.half = 1; speak(pick(['À mi-parcours, tiens bon !', 'La moitié est faite, continue !'])); }
+        else if (cur.dur >= 25 && !run.said.ten && sec === 10) { run.said.ten = 1; speak(pick(['Dix secondes, allez !', 'Plus que dix secondes, serre les dents !'])); }
+      }
     }
   }
   function logSession(done, seconds) {
@@ -1107,7 +1260,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     drawSub(0);
     $('#r-bar').style.width = '100%';
     alertSound('end'); vibrate([300, 100, 300, 100, 500]);
-    speak('Séance terminée');
+    speak(pick(['Bravo ! Séance terminée. Beau travail !', 'Séance terminée ! Tu peux être fier de toi.', 'C\u2019est fini, excellent travail !']));
     logSession(true, run.totalDur);
     $('#r-done-text').textContent = run.w.name + ' · ' + fmt(run.totalDur);
     $('#r-done').hidden = false;
@@ -1190,7 +1343,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   /* ---------- settings ---------- */
   function syncSettings() {
     $('#s-sound').checked = settings.sound; $('#s-volume').value = settings.volume;
-    $('#s-count').value = String(settings.countdown); $('#s-voice').checked = settings.voice;
+    $('#s-count').value = String(settings.countdown); $('#s-voice').checked = settings.voice; $('#s-alert').value = settings.alert;
+    fillVoiceList();
     $('#s-vib').checked = settings.vibrate; $('#s-wake').checked = settings.wake;
     $$('#s-theme button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === settings.theme ? 'true' : 'false'); });
   }
@@ -1201,9 +1355,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   bindSetting('#s-volume', 'volume', function (e) { return parseFloat(e.value); });
   bindSetting('#s-count', 'countdown', function (e) { return parseInt(e.value, 10); });
   bindSetting('#s-voice', 'voice', function (e) { return e.checked; });
+  (function () {
+    var sel = $('#s-alert');
+    SOUND_LIST.forEach(function (x) { var o = el('option', '', x[1]); o.value = x[0]; sel.appendChild(o); });
+    sel.addEventListener('change', function () { settings.alert = sel.value; save('tempo.settings', settings); ensureAudio(); alertSound('setEnd'); vibrate([100]); });
+    $('#s-voicepick').addEventListener('change', function () { settings.voiceName = this.value; save('tempo.settings', settings); var w = settings.voice; settings.voice = true; speak('Allez, on y va !'); settings.voice = w; });
+  })();
   bindSetting('#s-vib', 'vibrate', function (e) { return e.checked; });
   bindSetting('#s-wake', 'wake', function (e) { return e.checked; });
-  $('#s-test').addEventListener('click', function () { ensureAudio(); alertSound('setEnd'); vibrate([150]); speak('Test'); });
+  $('#s-test').addEventListener('click', function () { ensureAudio(); alertSound('setEnd'); vibrate([150]); speak('Allez, c\u2019est parti !'); });
   $$('#s-theme button').forEach(function (b) {
     b.addEventListener('click', function () { settings.theme = b.dataset.v; save('tempo.settings', settings); applyTheme(); syncSettings(); });
   });
