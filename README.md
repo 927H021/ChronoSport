@@ -8,7 +8,7 @@ Une seule page HTML, sans dépendance ni étape de compilation.
 - **Minuteurs d'intervalles** : préparation, effort, repos, séries, cycles, repos entre cycles et retour au calme. Quatre modèles fournis (HIIT 40/20, Circuit training, Gainage, Boxe 3 min), modifiables, duplicables et supprimables.
 - **Séance plein écran** : grand décompte, anneau de progression coloré selon la phase, pause, phase précédente et suivante.
 - **Chrono** : minuteur à cadran (de 1 à 60 minutes, réglage au doigt) et chronomètre avec aiguille des secondes et tours (le plus rapide en vert, le plus lent en rouge).
-- **Alertes** : sept sons au choix (gong, ring de boxe, klaxon de stade, sifflet de coach, montre sport, marimba, synthwave), compte à rebours sonore, voix d'annonceur en français qui crie le nom du minuteur (style et voix au choix), vibration, écran maintenu allumé.
+- **Alertes** : sept sons au choix (gong, ring de boxe, klaxon de stade, sifflet de coach, montre sport, marimba, synthwave), compte à rebours sonore, annonce vocale en français (nom de la phase, le nom du minuteur remplaçant « Effort »), vibration, écran maintenu allumé.
 - **Historique** des séances avec bilan de la semaine.
 - Thème sombre par défaut, thème clair en option.
 

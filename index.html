@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261022104602">
+<meta name="app-version" content="20261022105011">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -594,9 +594,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><label for="s-volume">Volume</label><input type="range" id="s-volume" min="0.1" max="1" step="0.05"></div>
       <div class="row"><label for="s-count">Compte à rebours<small>Bips avant la fin de chaque phase</small></label>
         <select id="s-count"><option value="0">Aucun</option><option value="3">3 dernières s</option><option value="5">5 dernières s</option><option value="10">10 dernières s</option></select></div>
-      <div class="row"><label for="s-voice">Annonce vocale<small>Annonce le nom du minuteur au début de chaque effort</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
-      <div class="row"><label for="s-voicestyle">Style de la voix<small>Annonceur : lente, aiguë et entraînante</small></label><select id="s-voicestyle"><option value="announcer">Annonceur</option><option value="natural">Naturelle</option></select></div>
-      <div class="row" id="row-voicepick" hidden><label for="s-voicepick">Voix du coach<small>Choisissez la voix française la plus naturelle</small></label><select id="s-voicepick"></select></div>
+      <div class="row"><label for="s-voice">Annonce vocale<small>Lit le nom de la phase et du minuteur à voix haute</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
       <div class="row"><label for="s-vib">Vibration<small>Selon l'appareil</small></label><span class="switch"><input type="checkbox" id="s-vib"><i></i></span></div>
       <div class="row"><label for="s-alert">Son d'alerte<small>Début d'effort, fin de série et de séance</small></label>
         <select id="s-alert"></select></div>
@@ -720,7 +718,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       { id: uid(), name: 'Boxe 3 min', prep: 10, work: 180, rest: 60, sets: 6, cycles: 1, cycleRest: 0, cool: 0 }
     ];
   };
-  var DEFAULTS = { sound: true, volume: 0.7, countdown: 3, voice: false, vibrate: true, wake: true, theme: 'dark', alert: 'gong', voiceName: '', voiceStyle: 'announcer' };
+  var DEFAULTS = { sound: true, volume: 0.7, countdown: 3, voice: false, vibrate: true, wake: true, theme: 'dark', alert: 'gong' };
   var workouts = load('tempo.workouts', null) || SEEDS();
   /* one-time cleanup: drop the removed built-in Tabata and Pomodoro (only if still unchanged) */
   if (!load('tempo.noTabata', false)) {
@@ -1097,57 +1095,16 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     } catch (e) {}
   }
   function vibrate(p) { if (settings.vibrate) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} } }
-  /* ---------- coach voice ---------- */
-  var voiceCache = null;
-  function frVoices() {
-    try { return (window.speechSynthesis.getVoices() || []).filter(function (v) { return /^fr/i.test(v.lang); }); } catch (e) { return []; }
-  }
-  function voiceScore(v) {
-    var n = v.name || '', sc = 0;
-    if (/premium|enhanced|am[eé]lior/i.test(n)) sc += 6;
-    if (/neural|natural|online|wavenet/i.test(n)) sc += 5;
-    if (/google/i.test(n)) sc += 3;
-    if (/thomas|am[eé]lie|audrey|aur[eé]lie|marie|julie|hortense|denise|henri|eloise/i.test(n)) sc += 2;
-    if (/^fr[-_]FR/i.test(v.lang)) sc += 1;
-    if (!v.localService) sc += 1;
-    return sc;
-  }
-  function pickVoice() {
-    var list = frVoices(); if (!list.length || !settings.voiceName) return null;
-    for (var i = 0; i < list.length; i++) if (list[i].name === settings.voiceName) return list[i];
-    return null;
-  }
-  function fillVoiceList() {
-    var sel = $('#s-voicepick'); if (!sel) return;
-    var list = frVoices(); sel.textContent = '';
-    var auto = el('option', '', 'Automatique (voix du système)'); auto.value = ''; sel.appendChild(auto);
-    list.forEach(function (v) { var o = el('option', '', v.name); o.value = v.name; sel.appendChild(o); });
-    sel.value = settings.voiceName || '';
-    $('#row-voicepick').hidden = !list.length;
-  }
-  try { if (window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = fillVoiceList; } } catch (e) {}
-  function say(text, voice, retry) {
-    var u = new SpeechSynthesisUtterance(settings.voiceStyle === 'natural' ? text : text.replace(/[.!?]*$/, ' !'));
-    u.lang = 'fr-FR'; u.volume = Math.min(1, settings.volume + 0.2);
-    if (voice) { u.voice = voice; u.lang = voice.lang; }
-    if (settings.voiceStyle === 'natural') { u.rate = 1.0; u.pitch = 1.0; }
-    else { u.rate = 0.85; u.pitch = 1.2; u.volume = 1; }
-    var started = false;
-    u.onstart = function () { started = true; };
-    /* if the chosen voice fails or stays silent, fall back to the system default voice */
-    u.onerror = function (ev) { if (ev && /interrupted|canceled/i.test(ev.error || '')) return; if (voice && retry) { try { window.speechSynthesis.cancel(); } catch (e) {} say(text, null, false); } };
-    window.speechSynthesis.speak(u);
-  }
+  /* ---------- voice ---------- */
   function speak(text) {
-    if (!settings.voice || !text) return;
+    if (!settings.voice) return;
     try {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      say(text, pickVoice(), true);
+      var u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.volume = settings.volume;
+      window.speechSynthesis.speak(u);
     } catch (e) {}
   }
-  /* The voice only announces the name of the chosen timer when an effort starts. */
-  function coachLine(s) { return s.type === 'work' ? run.w.name : ''; }
   var wakeLock = null;
   function acquireWake() {
     if (!settings.wake) return;
@@ -1176,7 +1133,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     buildSubs(w);
     keepAliveCheck();
     enterSeg(0, 0);
-    if (segs[0].type !== 'work') speak(w.name);
     drawSub(segs[0].dur * 1000);
     clearInterval(loop); loop = setInterval(tick, 100);
   }
@@ -1196,7 +1152,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (s.type === 'work') { alertSound('go'); vibrate([200]); }
     else if (s.type === 'prep') { tone(660, 300); }
     else { alertSound('setEnd'); vibrate([250, 100, 250, 100, 250]); }
-    var line = coachLine(s); if (line) speak(line);
+    speak(phaseLabel(s.type));
   }
   function elapsedTotal() {
     var done = 0; for (var k = 0; k < run.i; k++) done += run.segs[k].dur;
@@ -1252,6 +1208,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     drawSub(0);
     $('#r-bar').style.width = '100%';
     alertSound('end'); vibrate([300, 100, 300, 100, 500]);
+    speak('Séance terminée');
     logSession(true, run.totalDur);
     $('#r-done-text').textContent = run.w.name + ' · ' + fmt(run.totalDur);
     $('#r-done').hidden = false;
@@ -1334,8 +1291,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   /* ---------- settings ---------- */
   function syncSettings() {
     $('#s-sound').checked = settings.sound; $('#s-volume').value = settings.volume;
-    $('#s-count').value = String(settings.countdown); $('#s-voice').checked = settings.voice; $('#s-alert').value = settings.alert; $('#s-voicestyle').value = settings.voiceStyle;
-    fillVoiceList();
+    $('#s-count').value = String(settings.countdown); $('#s-voice').checked = settings.voice; $('#s-alert').value = settings.alert;
     $('#s-vib').checked = settings.vibrate; $('#s-wake').checked = settings.wake;
     $$('#s-theme button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === settings.theme ? 'true' : 'false'); });
   }
@@ -1350,12 +1306,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var sel = $('#s-alert');
     SOUND_LIST.forEach(function (x) { var o = el('option', '', x[1]); o.value = x[0]; sel.appendChild(o); });
     sel.addEventListener('change', function () { settings.alert = sel.value; save('tempo.settings', settings); ensureAudio(); alertSound('setEnd'); vibrate([100]); });
-    $('#s-voicestyle').addEventListener('change', function () { settings.voiceStyle = this.value; save('tempo.settings', settings); var w = settings.voice; settings.voice = true; speak('Boxe'); settings.voice = w; });
-    $('#s-voicepick').addEventListener('change', function () { settings.voiceName = this.value; save('tempo.settings', settings); var w = settings.voice; settings.voice = true; speak('Boxe'); settings.voice = w; });
   })();
   bindSetting('#s-vib', 'vibrate', function (e) { return e.checked; });
   bindSetting('#s-wake', 'wake', function (e) { return e.checked; });
-  $('#s-test').addEventListener('click', function () { ensureAudio(); alertSound('setEnd'); vibrate([150]); speak('Boxe'); });
+  $('#s-test').addEventListener('click', function () { ensureAudio(); alertSound('setEnd'); vibrate([150]); speak('Test'); });
   $$('#s-theme button').forEach(function (b) {
     b.addEventListener('click', function () { settings.theme = b.dataset.v; save('tempo.settings', settings); applyTheme(); syncSettings(); });
   });
@@ -1783,19 +1737,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var t = Date.now(); if (t - lastHint < 8000) return; lastHint = t;
     toast('Touchez l’écran pour réactiver le son');
   }
-  /* iOS only lets the page speak after a speech was started from a tap: do it silently on the first touch. */
-  var speechUnlocked = false;
-  function unlockSpeech() {
-    if (speechUnlocked || !settings.voice) return;
-    try {
-      if (!window.speechSynthesis) return;
-      var u = new SpeechSynthesisUtterance('.'); u.volume = 0; u.lang = 'fr-FR';
-      window.speechSynthesis.speak(u); speechUnlocked = true;
-    } catch (e) {}
-  }
-  ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio, true); document.addEventListener(ev, unlockSpeech, true); });
-  $('#s-voice').addEventListener('change', function () { speechUnlocked = false; unlockSpeech(); if (this.checked && !window.speechSynthesis) toast('Voix indisponible sur ce navigateur'); });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) speechUnlocked = false; if (!document.hidden) { ensureAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
+  ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, ensureAudio, true); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) { ensureAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
 
   /* ---------- init ---------- */
   applyTheme(); syncSettings(); renderHome(); renderHistory(); buildDial(); buildKeypad(); buildSWDial(); buildRunnerTrack(); restoreLive(); renderDial(); renderSW();
