@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261018081326">
+<meta name="app-version" content="20261022102443">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -741,6 +741,13 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (str.indexOf(':') >= 0) { var p = str.split(':'); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); }
     return parseInt(str, 10) || 0;
   }
+  /* The effort phase carries the name of the chosen timer instead of the word "Effort". */
+  function phaseLabel(type) { return (type === 'work' && run && run.w && run.w.name) ? run.w.name : PHASE_LABEL[type]; }
+  function setPhase(text) {
+    var e = $('#r-phase'); e.textContent = text;
+    var n = text.length; e.style.fontSize = n > 22 ? '13px' : n > 16 ? '15px' : n > 11 ? '18px' : '';
+    e.style.letterSpacing = n > 11 ? '.12em' : '';
+  }
   var PHASE_LABEL = { prep: 'Préparation', work: 'Effort', rest: 'Repos', between: 'Repos entre cycles', cool: 'Retour au calme' };
   function build(w) {
     var segs = [];
@@ -1033,18 +1040,18 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     run.end = Date.now() + s.dur * 1000 - (carryMs || 0);
     run.lastSec = -1;
     $('#runner').dataset.phase = s.type;
-    $('#r-phase').textContent = PHASE_LABEL[s.type];
+    setPhase(phaseLabel(s.type));
     var meta = '';
     if (s.type === 'work' || s.type === 'rest' || s.type === 'between') {
       meta = 'Série ' + s.set + '/' + run.w.sets + (run.w.cycles > 1 ? ' · Cycle ' + s.cycle + '/' + run.w.cycles : '');
     }
     $('#r-meta').textContent = meta;
     var nx = run.segs[i + 1];
-    $('#r-next').textContent = nx ? 'Ensuite : ' + PHASE_LABEL[nx.type] + ' · ' + fmt(nx.dur) : 'Dernière phase';
+    $('#r-next').textContent = nx ? 'Ensuite : ' + phaseLabel(nx.type) + ' · ' + fmt(nx.dur) : 'Dernière phase';
     if (s.type === 'work') { alertSound('go'); vibrate([200]); }
     else if (s.type === 'prep') { tone(660, 300); }
     else { alertSound('setEnd'); vibrate([250, 100, 250, 100, 250]); }
-    speak(PHASE_LABEL[s.type]);
+    speak(phaseLabel(s.type));
   }
   function elapsedTotal() {
     var done = 0; for (var k = 0; k < run.i; k++) done += run.segs[k].dur;
@@ -1118,12 +1125,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (!run.paused) {
       run.paused = true; run.pausedRem = Math.max(0, run.end - Date.now());
       $('#r-ico').innerHTML = ICO_PLAY; $('#r-toggle').setAttribute('aria-label', 'Reprendre'); $('#runner').classList.add('paused');
-      $('#r-phase').textContent = 'En pause';
+      setPhase('En pause');
       releaseWake();
     } else {
       run.paused = false; run.end = Date.now() + run.pausedRem;
       $('#r-ico').innerHTML = ICO_PAUSE; $('#r-toggle').setAttribute('aria-label', 'Pause'); $('#runner').classList.remove('paused');
-      $('#r-phase').textContent = PHASE_LABEL[run.segs[run.i].type];
+      setPhase(phaseLabel(run.segs[run.i].type));
       acquireWake();
     }
   }
@@ -1134,7 +1141,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var wasPaused = run.paused;
     run.paused = false; $('#runner').classList.remove('paused');
     enterSeg(i, 0);
-    if (wasPaused) { run.paused = true; run.pausedRem = run.segs[i].dur * 1000; $('#runner').classList.add('paused'); $('#r-phase').textContent = 'En pause'; }
+    if (wasPaused) { run.paused = true; run.pausedRem = run.segs[i].dur * 1000; $('#runner').classList.add('paused'); setPhase('En pause'); }
     else { $('#r-ico').innerHTML = ICO_PAUSE; }
     draw(run.paused ? run.pausedRem : run.end - Date.now());
   }
