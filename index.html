@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261022103624">
+<meta name="app-version" content="20261022103918">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1126,19 +1126,28 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#row-voicepick').hidden = !list.length;
   }
   try { if (window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = fillVoiceList; } } catch (e) {}
+  function say(text, voice, retry) {
+    var u = new SpeechSynthesisUtterance(settings.voiceStyle === 'natural' ? text : text.replace(/[.!?]*$/, ' !'));
+    u.lang = 'fr-FR'; u.volume = Math.min(1, settings.volume + 0.2);
+    if (voice) { u.voice = voice; u.lang = voice.lang; }
+    if (settings.voiceStyle === 'natural') { u.rate = 1.0; u.pitch = 1.0; }
+    else { u.rate = 0.7; u.pitch = 1.35; u.volume = 1; }
+    var started = false;
+    u.onstart = function () { started = true; };
+    /* if the chosen voice fails or stays silent, fall back to the system default voice */
+    u.onerror = function () { if (voice && retry) { try { window.speechSynthesis.cancel(); } catch (e) {} say(text, null, false); } };
+    window.speechSynthesis.speak(u);
+    if (voice && retry) setTimeout(function () { if (!started) { try { window.speechSynthesis.cancel(); } catch (e) {} say(text, null, false); } }, 1800);
+  }
   function speak(text) {
     if (!settings.voice || !text) return;
     try {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(settings.voiceStyle === 'natural' ? text : text.replace(/[.!?]*$/, ' !')); u.lang = 'fr-FR'; u.volume = Math.min(1, settings.volume + 0.2);
-      var v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; }
-      if (settings.voiceStyle === 'natural') { u.rate = 1.0; u.pitch = 1.0; }
-      else { u.rate = 0.7; u.pitch = 1.35; u.volume = 1; }
-      window.speechSynthesis.speak(u);
+      try { window.speechSynthesis.resume(); } catch (e0) {}
+      setTimeout(function () { try { say(text, pickVoice(), true); } catch (e) {} }, 60);
     } catch (e) {}
   }
-  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   /* The voice only announces the name of the chosen timer when an effort starts. */
   function coachLine(s) { return s.type === 'work' ? run.w.name : ''; }
   var wakeLock = null;
