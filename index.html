@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261022103134">
+<meta name="app-version" content="20261022103624">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -594,7 +594,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><label for="s-volume">Volume</label><input type="range" id="s-volume" min="0.1" max="1" step="0.05"></div>
       <div class="row"><label for="s-count">Compte à rebours<small>Bips avant la fin de chaque phase</small></label>
         <select id="s-count"><option value="0">Aucun</option><option value="3">3 dernières s</option><option value="5">5 dernières s</option><option value="10">10 dernières s</option></select></div>
-      <div class="row"><label for="s-voice">Annonce vocale<small>Coach : nom du minuteur, encouragements</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
+      <div class="row"><label for="s-voice">Annonce vocale<small>Annonce le nom du minuteur au début de chaque effort</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
+      <div class="row"><label for="s-voicestyle">Style de la voix<small>Annonceur : lente, aiguë et entraînante</small></label><select id="s-voicestyle"><option value="announcer">Annonceur</option><option value="natural">Naturelle</option></select></div>
       <div class="row" id="row-voicepick" hidden><label for="s-voicepick">Voix du coach<small>Choisissez la voix française la plus naturelle</small></label><select id="s-voicepick"></select></div>
       <div class="row"><label for="s-vib">Vibration<small>Selon l'appareil</small></label><span class="switch"><input type="checkbox" id="s-vib"><i></i></span></div>
       <div class="row"><label for="s-alert">Son d'alerte<small>Début d'effort, fin de série et de séance</small></label>
@@ -719,7 +720,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       { id: uid(), name: 'Boxe 3 min', prep: 10, work: 180, rest: 60, sets: 6, cycles: 1, cycleRest: 0, cool: 0 }
     ];
   };
-  var DEFAULTS = { sound: true, volume: 0.7, countdown: 3, voice: false, vibrate: true, wake: true, theme: 'dark', alert: 'gong', voiceName: '' };
+  var DEFAULTS = { sound: true, volume: 0.7, countdown: 3, voice: false, vibrate: true, wake: true, theme: 'dark', alert: 'gong', voiceName: '', voiceStyle: 'announcer' };
   var workouts = load('tempo.workouts', null) || SEEDS();
   /* one-time cleanup: drop the removed built-in Tabata and Pomodoro (only if still unchanged) */
   if (!load('tempo.noTabata', false)) {
@@ -1126,31 +1127,20 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   try { if (window.speechSynthesis) { window.speechSynthesis.onvoiceschanged = fillVoiceList; } } catch (e) {}
   function speak(text) {
-    if (!settings.voice) return;
+    if (!settings.voice || !text) return;
     try {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.volume = Math.min(1, settings.volume + 0.2);
+      var u = new SpeechSynthesisUtterance(settings.voiceStyle === 'natural' ? text : text.replace(/[.!?]*$/, ' !')); u.lang = 'fr-FR'; u.volume = Math.min(1, settings.volume + 0.2);
       var v = pickVoice(); if (v) { u.voice = v; u.lang = v.lang; }
-      u.rate = 1.06; u.pitch = 1.05;
+      if (settings.voiceStyle === 'natural') { u.rate = 1.0; u.pitch = 1.0; }
+      else { u.rate = 0.7; u.pitch = 1.35; u.volume = 1; }
       window.speechSynthesis.speak(u);
     } catch (e) {}
   }
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-  /* what the coach says when a phase starts */
-  function coachLine(s) {
-    var w = run.w, name = w.name, last = (s.type === 'work' && s.set === w.sets && s.cycle === w.cycles);
-    if (s.type === 'prep') return pick(['Préparez-vous !', 'On se met en place !', 'Respirez, on y est presque !']);
-    if (s.type === 'work') {
-      if (last) return 'Dernière série ! ' + name + ' ! Donne tout !';
-      if (s.set === 1 && s.cycle === 1) return name + ' ! C’est parti !';
-      return name + ' ! ' + pick(['On y va !', 'Allez, on lâche rien !', 'Série ' + s.set + ', donne tout !', 'Plus fort !', 'Tu peux le faire !']);
-    }
-    if (s.type === 'rest') return pick(['Récupère, respire bien.', 'Repos. Respire profondément.', 'Bien joué ! Récupère.', 'Souffle, on repart bientôt.']);
-    if (s.type === 'between') return 'Bravo ! Repos entre les cycles. Hydrate-toi.';
-    if (s.type === 'cool') return 'Retour au calme. Respire doucement, tu as tout donné.';
-    return phaseLabel(s.type);
-  }
+  /* The voice only announces the name of the chosen timer when an effort starts. */
+  function coachLine(s) { return s.type === 'work' ? run.w.name : ''; }
   var wakeLock = null;
   function acquireWake() {
     if (!settings.wake) return;
@@ -1198,8 +1188,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (s.type === 'work') { alertSound('go'); vibrate([200]); }
     else if (s.type === 'prep') { tone(660, 300); }
     else { alertSound('setEnd'); vibrate([250, 100, 250, 100, 250]); }
-    run.said = {};
-    speak(coachLine(s));
+    var line = coachLine(s); if (line) speak(line);
   }
   function elapsedTotal() {
     var done = 0; for (var k = 0; k < run.i; k++) done += run.segs[k].dur;
@@ -1240,11 +1229,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       run.lastSec = sec;
       var cb = settings.countdown;
       if (cb > 0 && sec <= cb && sec > 0 && run.segs[run.i].dur > cb) { tone(sec === 1 ? 760 : 620, 130); }
-      var cur = run.segs[run.i];
-      if (settings.voice && cur.type === 'work' && run.said) {
-        if (cur.dur >= 40 && !run.said.half && sec === Math.round(cur.dur / 2)) { run.said.half = 1; speak(pick(['À mi-parcours, tiens bon !', 'La moitié est faite, continue !'])); }
-        else if (cur.dur >= 25 && !run.said.ten && sec === 10) { run.said.ten = 1; speak(pick(['Dix secondes, allez !', 'Plus que dix secondes, serre les dents !'])); }
-      }
     }
   }
   function logSession(done, seconds) {
@@ -1260,7 +1244,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     drawSub(0);
     $('#r-bar').style.width = '100%';
     alertSound('end'); vibrate([300, 100, 300, 100, 500]);
-    speak(pick(['Bravo ! Séance terminée. Beau travail !', 'Séance terminée ! Tu peux être fier de toi.', 'C\u2019est fini, excellent travail !']));
     logSession(true, run.totalDur);
     $('#r-done-text').textContent = run.w.name + ' · ' + fmt(run.totalDur);
     $('#r-done').hidden = false;
@@ -1343,7 +1326,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   /* ---------- settings ---------- */
   function syncSettings() {
     $('#s-sound').checked = settings.sound; $('#s-volume').value = settings.volume;
-    $('#s-count').value = String(settings.countdown); $('#s-voice').checked = settings.voice; $('#s-alert').value = settings.alert;
+    $('#s-count').value = String(settings.countdown); $('#s-voice').checked = settings.voice; $('#s-alert').value = settings.alert; $('#s-voicestyle').value = settings.voiceStyle;
     fillVoiceList();
     $('#s-vib').checked = settings.vibrate; $('#s-wake').checked = settings.wake;
     $$('#s-theme button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === settings.theme ? 'true' : 'false'); });
@@ -1359,11 +1342,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var sel = $('#s-alert');
     SOUND_LIST.forEach(function (x) { var o = el('option', '', x[1]); o.value = x[0]; sel.appendChild(o); });
     sel.addEventListener('change', function () { settings.alert = sel.value; save('tempo.settings', settings); ensureAudio(); alertSound('setEnd'); vibrate([100]); });
-    $('#s-voicepick').addEventListener('change', function () { settings.voiceName = this.value; save('tempo.settings', settings); var w = settings.voice; settings.voice = true; speak('Allez, on y va !'); settings.voice = w; });
+    $('#s-voicestyle').addEventListener('change', function () { settings.voiceStyle = this.value; save('tempo.settings', settings); var w = settings.voice; settings.voice = true; speak('Boxe'); settings.voice = w; });
+    $('#s-voicepick').addEventListener('change', function () { settings.voiceName = this.value; save('tempo.settings', settings); var w = settings.voice; settings.voice = true; speak('Boxe'); settings.voice = w; });
   })();
   bindSetting('#s-vib', 'vibrate', function (e) { return e.checked; });
   bindSetting('#s-wake', 'wake', function (e) { return e.checked; });
-  $('#s-test').addEventListener('click', function () { ensureAudio(); alertSound('setEnd'); vibrate([150]); speak('Allez, c\u2019est parti !'); });
+  $('#s-test').addEventListener('click', function () { ensureAudio(); alertSound('setEnd'); vibrate([150]); speak('Boxe'); });
   $$('#s-theme button').forEach(function (b) {
     b.addEventListener('click', function () { settings.theme = b.dataset.v; save('tempo.settings', settings); applyTheme(); syncSettings(); });
   });
