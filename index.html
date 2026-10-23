@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023112327">
+<meta name="app-version" content="20261023112636">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1089,8 +1089,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       if (k >= a) { var v = m[k]; delete m[k]; if (k + n <= draft.work) m[k + n] = v; else if (String(v).trim()) lost++; }
     });
     cqSel = { a: a, b: Math.min(draft.work, a + n - 1) };
-    var box = $('.ed-body'), top = box.scrollTop;
-    refreshEditor(); box.scrollTop = top;
+    cqRebuild();
     toast(n + (n > 1 ? ' secondes vides insérées' : ' seconde vide insérée') + ' · effort inchangé ' + fmt(draft.work) + (lost ? ' · ' + lost + (lost > 1 ? ' actions sorties du minuteur' : ' action sortie du minuteur') : ''));
   }
   function cqCopy() {
