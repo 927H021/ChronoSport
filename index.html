@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023124710">
+<meta name="app-version" content="20261023125309">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -678,6 +678,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <div class="section-title">Données</div>
     <div class="group">
       <div class="row"><span class="lbl">Vider l'historique</span><button class="btn danger" type="button" id="s-clear-hist">Vider</button></div>
+      <div class="row"><span class="lbl">Sauvegarde de vos minuteurs et réglages</span><span style="display:flex;gap:6px"><button class="btn ghost" type="button" id="s-export">Exporter</button><button class="btn ghost" type="button" id="s-import">Importer</button></span></div>
+      <input type="file" id="s-import-file" accept=".json,application/json" hidden>
+      <div class="row" id="s-store-warn" hidden><span class="lbl" style="color:var(--accent)">Le stockage de cet appareil est indisponible : vos modifications ne seront pas conservées. Ouvrez ChronoSport depuis l'icône installée ou son adresse web.</span></div>
       <div class="row"><span class="lbl">Rétablir les minuteurs d'origine</span><button class="btn danger" type="button" id="s-reset">Rétablir</button></div>
     </div>
     <div class="foot">Les minuteurs et l'historique sont enregistrés dans ce navigateur.</div>
@@ -738,7 +741,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
         <div class="cq-btns">
           <button type="button" id="cq-b-copy" aria-label="Copier le bloc sélectionné">Copier</button>
           <button type="button" id="cq-b-paste" aria-label="Coller le bloc à la seconde sélectionnée">Coller</button>
-          <button type="button" id="cq-b-loop" aria-label="Coller le bloc en boucle jusqu'à la fin de l'effort">Boucle</button>
+          <button type="button" id="cq-b-loop" aria-label="Répéter tout ce qui précède la seconde sélectionnée jusqu'à la fin de l'effort">Boucle</button>
           <button type="button" id="cq-b-clear" aria-label="Effacer le bloc sélectionné">Effacer</button>
           <button type="button" id="cq-b-ins" aria-label="Insérer des secondes vides avant la sélection">Insérer</button>
           <button type="button" id="cq-b-del" aria-label="Retirer les secondes sélectionnées et remonter les actions suivantes">Retirer</button>
@@ -748,7 +751,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row" id="cq-copy-row"><span class="lbl">Copier cette série vers toutes les séries</span><button class="btn ghost" type="button" id="cq-copy">Copier</button></div>
       <div class="row"><span class="lbl">Effacer les actions<small id="cq-clear-sub"></small></span><button class="btn danger" type="button" id="cq-clear">Effacer</button></div>
     </div>
-    <div class="foot">À la seconde indiquée de l'effort, l'action s'affiche à l'écran et, si l'annonce vocale est active, elle est lue à voix haute. Touchez une action rapide pour la placer sur la seconde sélectionnée (une 2<sup>e</sup> touche ajoute « &amp; » pour enchaîner). Les boutons rapides se modifient dans Réglages &gt; Actions rapides. Pour répéter un bloc avec des lignes vides entre chaque répétition, sélectionnez à l'endroit de collage une zone aussi longue que le bloc plus ses lignes vides, puis « Boucle ». Pour copier un bloc : touchez le numéro de sa première seconde, puis celui de sa dernière, puis « Copier » ; sélectionnez ensuite la seconde de destination et touchez « Coller » (« Boucle » répète le bloc jusqu'à la fin de l'effort). « Insérer » ajoute, avant la sélection, autant de secondes vides que la sélection en compte : les actions suivantes sont décalées vers le bas et la durée de l'effort ne change pas (les actions qui dépassent la fin sont supprimées).</div>
+    <div class="foot">À la seconde indiquée de l'effort, l'action s'affiche à l'écran et, si l'annonce vocale est active, elle est lue à voix haute. Touchez une action rapide pour la placer sur la seconde sélectionnée (une 2<sup>e</sup> touche ajoute « &amp; » pour enchaîner). Les boutons rapides se modifient dans Réglages &gt; Actions rapides. « Boucle » : touchez la seconde où la répétition doit commencer ; tout ce qui la précède (actions et lignes vides) est reproduit dans le même ordre jusqu'à la fin de l'effort. Pour copier un bloc : touchez le numéro de sa première seconde, puis celui de sa dernière, puis « Copier » ; sélectionnez ensuite la seconde de destination et touchez « Coller » (« Boucle » répète le bloc jusqu'à la fin de l'effort). « Insérer » ajoute, avant la sélection, autant de secondes vides que la sélection en compte : les actions suivantes sont décalées vers le bas et la durée de l'effort ne change pas (les actions qui dépassent la fin sont supprimées).</div>
     </div>
     <div class="group total" style="margin-top:20px"><div class="row"><span>Durée totale</span><b class="num" id="ed-total">0:00</b></div></div>
   </div>
@@ -1084,7 +1087,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#cq-b-ins').disabled = !has;
     $('#cq-b-del').disabled = !has;
     $('#cq-b-paste').disabled = !has || !cqClip;
-    $('#cq-b-loop').disabled = !has || !cqClip;
+    $('#cq-b-loop').disabled = !has || !(cqClip || cqSel.a > 1);
   }
   /* reconstruit le tableau sans perdre la position de défilement de l'éditeur */
   function cqRebuild() {
@@ -1130,24 +1133,34 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     cqBar(); toast('Bloc copié (' + len + ' s)');
   }
   function cqPaste(loop) {
-    if (!cqSel || !cqClip) return;
-    var m = cqMap(), a = cqSel.a, L = cqClip.len, written = 0;
-    /* en boucle, si la zone sélectionnée est plus longue que le bloc copié, sa longueur fixe le pas de répétition :
-       les lignes vides entre deux blocs sont ainsi conservées */
-    var P = loop ? Math.max(L, cqSel.b - cqSel.a + 1) : L;
-    for (var start = a; start <= draft.work; start += P) {
-      for (var i = 1; i <= P; i++) {
-        if (i > L) { var g = start + i - 1; if (g <= draft.work) delete m[g]; continue; }
-        var sec = start + i - 1;
-        if (sec > draft.work) break;
-        delete m[sec];
-        if (cqClip.cues[i]) { m[sec] = cqClip.cues[i]; written++; }
+    if (!cqSel) return;
+    var m = cqMap(), a = cqSel.a, written = 0;
+    if (loop && a > 1) {
+      /* Boucle : tout ce qui précède la ligne sélectionnée (actions et lignes vides) est reproduit dans le même ordre jusqu'à la fin de l'effort */
+      var P = a - 1;
+      for (var sec = a; sec <= draft.work; sec++) {
+        var src = ((sec - 1) % P) + 1;
+        if (m[src]) { m[sec] = m[src]; written++; } else delete m[sec];
+      }
+      cqSel = { a: a, b: Math.min(draft.work, a + P - 1) };
+      cqRebuild();
+      toast('Séquence des ' + P + ' premières secondes répétée jusqu’à la fin');
+      return;
+    }
+    if (!cqClip) { toast(loop ? 'Sélectionnez la seconde où la répétition doit commencer (après la séquence à répéter)' : 'Copiez d’abord un bloc'); return; }
+    var L = cqClip.len;
+    for (var start = a; start <= draft.work; start += L) {
+      for (var i = 1; i <= L; i++) {
+        var sc = start + i - 1;
+        if (sc > draft.work) break;
+        delete m[sc];
+        if (cqClip.cues[i]) { m[sc] = cqClip.cues[i]; written++; }
       }
       if (!loop) break;
     }
-    cqSel = { a: a, b: Math.min(draft.work, a + P - 1) };
+    cqSel = { a: a, b: Math.min(draft.work, a + L - 1) };
     cqRebuild();
-    toast(loop ? 'Bloc collé en boucle (pas de ' + P + ' s) jusqu’à la fin' : 'Bloc collé à la seconde ' + a);
+    toast(loop ? 'Bloc collé en boucle jusqu’à la fin' : 'Bloc collé à la seconde ' + a);
   }
   function cqClearBlock() {
     if (!cqSel) return;
@@ -1808,6 +1821,34 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     });
   }
   armed($('#s-clear-hist'), function () { history = []; save('tempo.history', history); renderHistory(); toast('Historique vidé'); });
+  /* stockage durable + sauvegarde manuelle */
+  (function () {
+    var ok = true;
+    try { localStorage.setItem('tempo.__t', '1'); ok = localStorage.getItem('tempo.__t') === '1'; localStorage.removeItem('tempo.__t'); } catch (e) { ok = false; }
+    if (!ok) { $('#s-store-warn').hidden = false; setTimeout(function () { toast('Stockage indisponible : modifications non conservées'); }, 1200); }
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
+    $('#s-export').addEventListener('click', function () {
+      var o = {}; try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf('tempo.') === 0 && k !== 'tempo.draft') o[k] = localStorage.getItem(k); }); } catch (e) {}
+      var blob = new Blob([JSON.stringify({ app: 'ChronoSport', date: new Date().toISOString(), data: o })], { type: 'application/json' });
+      var f = new File([blob], 'chronosport-sauvegarde.json', { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: 'Sauvegarde ChronoSport' }).catch(function () {}); return; }
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'chronosport-sauvegarde.json'; document.body.appendChild(a); a.click(); a.remove();
+      toast('Sauvegarde exportée');
+    });
+    $('#s-import').addEventListener('click', function () { $('#s-import-file').click(); });
+    $('#s-import-file').addEventListener('change', function () {
+      var fl = this.files && this.files[0]; if (!fl) return;
+      var r = new FileReader();
+      r.onload = function () {
+        try {
+          var j = JSON.parse(r.result); if (!j || j.app !== 'ChronoSport' || !j.data) throw 0;
+          Object.keys(j.data).forEach(function (k) { if (k.indexOf('tempo.') === 0) localStorage.setItem(k, j.data[k]); });
+          toast('Sauvegarde importée'); setTimeout(function () { location.reload(); }, 700);
+        } catch (e) { toast('Fichier de sauvegarde invalide'); }
+      };
+      r.readAsText(fl);
+    });
+  })();
   armed($('#s-reset'), function () { workouts = SEEDS(); save('tempo.workouts', workouts); renderHome(); toast('Minuteurs rétablis'); });
 
   /* ---------- réglages : actions rapides ---------- */
