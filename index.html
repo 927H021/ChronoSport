@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023112636">
+<meta name="app-version" content="20261023113658">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -596,7 +596,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .cq-bar { position: sticky; bottom: 0; z-index: 2; background: var(--surface); padding: 8px 12px 10px; border-top: 1px solid var(--line); box-shadow: 0 -6px 14px rgba(0, 0, 0, .18); }
 .cq-sel { font-size: 14px; font-weight: 500; letter-spacing: 0; min-height: 20px; }
 .cq-clipinfo { font-size: 13px; color: var(--muted); letter-spacing: 0; min-height: 18px; margin-top: 1px; }
-.cq-btns { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+.cq-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
 .cq-hd span:first-child { white-space: nowrap; letter-spacing: .06em; font-size: 12px; }
 .cq-btns button { min-height: 40px; padding: 0 2px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--accent); font-family: var(--fd); font-size: 16px; font-weight: 600; letter-spacing: 0; text-transform: none; touch-action: manipulation; overflow: hidden; white-space: nowrap; }
 /* clavier ouvert / saisie en cours : on libère la place, l'en-tête collant (boutons rapides) reste visible */
@@ -736,6 +736,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
           <button type="button" id="cq-b-loop" aria-label="Coller le bloc en boucle jusqu'à la fin de l'effort">Boucle</button>
           <button type="button" id="cq-b-clear" aria-label="Effacer le bloc sélectionné">Effacer</button>
           <button type="button" id="cq-b-ins" aria-label="Insérer des secondes vides avant la sélection">Insérer</button>
+          <button type="button" id="cq-b-del" aria-label="Retirer les secondes sélectionnées et remonter les actions suivantes">Retirer</button>
         </div>
       </div>
       <div class="cq-count" id="cq-count"></div>
@@ -1073,6 +1074,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#cq-b-copy').disabled = !has;
     $('#cq-b-clear').disabled = !has;
     $('#cq-b-ins').disabled = !has;
+    $('#cq-b-del').disabled = !has;
     $('#cq-b-paste').disabled = !has || !cqClip;
     $('#cq-b-loop').disabled = !has || !cqClip;
   }
@@ -1090,7 +1092,27 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     });
     cqSel = { a: a, b: Math.min(draft.work, a + n - 1) };
     cqRebuild();
-    toast(n + (n > 1 ? ' secondes vides insérées' : ' seconde vide insérée') + ' · effort inchangé ' + fmt(draft.work) + (lost ? ' · ' + lost + (lost > 1 ? ' actions sorties du minuteur' : ' action sortie du minuteur') : ''));
+    toast(n + (n > 1 ? ' secondes insérées' : ' seconde insérée') + ' · ' + cqRemain() + (lost ? ' · ' + lost + (lost > 1 ? ' actions sorties du minuteur' : ' action sortie du minuteur') : ''));
+  }
+  /* temps libre restant après la dernière action */
+  function cqRemain() {
+    var m = cqMap(), last = 0;
+    Object.keys(m).forEach(function (k) { if (String(m[k]).trim() && +k > last) last = +k; });
+    var r = draft.work - last;
+    return 'reste ' + r + ' s libre' + (r > 1 ? 's' : '') + ' en fin d’effort';
+  }
+  /* retire les secondes sélectionnées : les actions suivantes remontent, la durée de l'effort ne change pas */
+  function cqRemove() {
+    if (!cqSel) return;
+    var m = cqMap(), a = cqSel.a, b = cqSel.b, n = b - a + 1;
+    Object.keys(m).map(Number).sort(function (x, y) { return x - y; }).forEach(function (k) {
+      if (k < a) return;
+      var v = m[k]; delete m[k];
+      if (k > b) m[k - n] = v;
+    });
+    cqSel = { a: a, b: Math.min(draft.work, b) };
+    cqRebuild();
+    toast(n + (n > 1 ? ' secondes retirées' : ' seconde retirée') + ' · ' + cqRemain());
   }
   function cqCopy() {
     if (!cqSel) return;
@@ -1126,6 +1148,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   $('#cq-b-loop').addEventListener('click', function () { cqPaste(true); });
   $('#cq-b-clear').addEventListener('click', cqClearBlock);
   $('#cq-b-ins').addEventListener('click', cqInsert);
+  $('#cq-b-del').addEventListener('click', cqRemove);
   /* boutons rapides : lus dans les réglages (settings.quick) */
   function buildQuick() {
     var sg = $('#cq-sugg'); sg.textContent = '';
