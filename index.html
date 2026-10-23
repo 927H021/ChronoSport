@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023115429">
+<meta name="app-version" content="20261023115743">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -26,7 +26,11 @@
     if (busy || !cur || !/^https?:/.test(location.protocol)) return; busy = true;
     fetch(location.pathname + '?nocache=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
       var m = t.match(/<meta name="app-version" content="([^"]+)"/);
-      if (m && m[1] !== cur) { location.replace(location.pathname + '?v=' + m[1]); }
+      if (m && m[1] !== cur) {
+        /* ne jamais recharger pendant une modification ou une séance : on attend le prochain retour dans l'app */
+        var ed = document.getElementById('editor'), busyUi = (ed && !ed.hidden) || document.querySelector('#runner:not([hidden])');
+        if (!busyUi) location.replace(location.pathname + '?v=' + m[1]);
+      }
       busy = false;
     }).catch(function () { busy = false; });
   }
@@ -1285,13 +1289,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     ed.addEventListener('focusout', function () { setTimeout(fitEditor, 150); });
   })();
   var deleteArmed = false;
-  function openEditor(w) {
-    editingId = w ? w.id : null;
-    draft = w ? clone(w) : { name: '', prep: 10, work: 30, rest: 15, sets: 8, cycles: 1, cycleRest: 60, cool: 0 };
+  function openEditor(w, restored) {
+    editingId = w ? w.id : (restored ? restored.editingId : null);
+    draft = restored ? restored.draft : w ? clone(w) : { name: '', prep: 10, work: 30, rest: 15, sets: 8, cycles: 1, cycleRest: 60, cool: 0 };
     edSet = 0; cqKey = ''; cqFocus = 0; cqSel = null;
-    $('#ed-title').textContent = w ? 'Modifier' : 'Nouveau minuteur';
+    var isEdit = !!editingId;
+    $('#ed-title').textContent = isEdit ? 'Modifier' : 'Nouveau minuteur';
     $('#ed-name').value = draft.name;
-    $('#ed-delete').hidden = !w; $('#ed-dup').hidden = !w;
+    $('#ed-delete').hidden = !isEdit; $('#ed-dup').hidden = !isEdit;
     deleteArmed = false; $('#ed-delete').textContent = 'Supprimer';
     buildEditorFields(); refreshEditor();
     $('#editor').hidden = false;
@@ -2264,5 +2269,21 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
   /* ---------- init ---------- */
   applyTheme(); syncSettings(); renderQuickSettings(); renderHome(); renderHistory(); buildDial(); buildKeypad(); buildSWDial(); buildRunnerTrack(); restoreLive(); renderDial(); renderSW();
+
+  /* Sauvegarde automatique du brouillon : rien n'est perdu si l'app est fermée avant « Enregistrer » */
+  (function () {
+    var ed = $('#editor'), tmr = 0;
+    function saveDraft() {
+      if (ed.hidden || !draft) return;
+      try { draft.name = $('#ed-name').value; save('tempo.draft', { editingId: editingId, draft: draft }); } catch (e) {}
+    }
+    function later() { clearTimeout(tmr); tmr = setTimeout(saveDraft, 300); }
+    ['input', 'click', 'change'].forEach(function (ev) { ed.addEventListener(ev, later, true); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) saveDraft(); });
+    window.addEventListener('pagehide', saveDraft);
+    new MutationObserver(function () { if (ed.hidden) { clearTimeout(tmr); try { localStorage.removeItem('tempo.draft'); } catch (e) {} } }).observe(ed, { attributes: true, attributeFilter: ['hidden'] });
+    var d = load('tempo.draft', null);
+    if (d && d.draft && typeof d.draft === 'object') { try { openEditor(null, d); toast('Modifications non enregistrées récupérées'); } catch (e) {} }
+  })();
 })();
 </script>
