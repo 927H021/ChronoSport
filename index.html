@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023005215">
+<meta name="app-version" content="20261023011346">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -585,6 +585,22 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .cq-in::placeholder { color: var(--muted); opacity: .4; }
 .cq-x { flex: none; width: 36px; height: 36px; display: grid; place-items: center; color: var(--muted); font-size: 22px; line-height: 1; }
 .cq-row:not(.on) .cq-x { visibility: hidden; }
+.cq-t { cursor: pointer; align-self: stretch; min-height: 44px; background: none; border: 0; touch-action: manipulation; }
+.cq-row.sel { background: rgba(255, 106, 26, .18); box-shadow: inset 0 0 0 1px var(--accent); }
+.cq-row.sel .cq-t { color: var(--accent); }
+#cq { overflow: visible; overflow: clip; }
+.cq-bar { position: sticky; bottom: 0; z-index: 2; background: var(--surface); padding: 8px 12px 10px; border-top: 1px solid var(--line); box-shadow: 0 -6px 14px rgba(0, 0, 0, .18); }
+.cq-sel { font-size: 14px; font-weight: 500; letter-spacing: 0; min-height: 20px; }
+.cq-clipinfo { font-size: 13px; color: var(--muted); letter-spacing: 0; min-height: 18px; margin-top: 1px; }
+.cq-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
+.cq-hd span:first-child { white-space: nowrap; letter-spacing: .06em; font-size: 12px; }
+.cq-btns button { min-height: 40px; padding: 0 4px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--accent); font-family: var(--fd); font-size: 16px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; touch-action: manipulation; }
+.cq-btns button:disabled { opacity: .35; cursor: default; }
+.qk-in { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--fg); font: inherit; font-size: 17px; padding: 8px 0; letter-spacing: 0; }
+.qk-in::placeholder { color: var(--muted); opacity: .6; }
+.qk-btn { flex: none; width: 40px; height: 40px; display: grid; place-items: center; color: var(--accent); font-size: 20px; line-height: 1; }
+.qk-btn.del { color: var(--red); font-size: 24px; }
+.qk-btn:disabled { opacity: .25; cursor: default; }
 .cq-count { padding: 10px 16px; font-size: 13px; color: var(--muted); letter-spacing: 0; border-top: 1px solid var(--line); }
 
 /* ---- actions seconde par seconde : affichage en séance ---- */
@@ -628,6 +644,13 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
         <select id="s-alert"></select></div>
       <div class="row"><span class="lbl">Tester le son</span><button class="btn ghost" type="button" id="s-test">Bip</button></div>
     </div>
+    <div class="section-title">Actions rapides</div>
+    <div class="group" id="s-quick"></div>
+    <div class="group" style="margin-top:12px">
+      <div class="row"><input class="qk-in" id="s-quick-new" type="text" maxlength="40" placeholder="Nouvelle action (ex. Crochet bas)" autocomplete="off" aria-label="Nouvelle action rapide"><button class="btn ghost" type="button" id="s-quick-add">Ajouter</button></div>
+      <div class="row"><span class="lbl">Rétablir les actions rapides d'origine</span><button class="btn danger" type="button" id="s-quick-reset">Rétablir</button></div>
+    </div>
+    <div class="foot">Ces boutons s'affichent au-dessus du tableau d'actions dans l'éditeur d'un minuteur. Modifiez le texte directement, touchez ↑ pour monter un bouton ou × pour le supprimer.</div>
     <div class="section-title">Affichage</div>
     <div class="group">
       <div class="row"><label for="s-wake">Écran allumé pendant la séance</label><span class="switch"><input type="checkbox" id="s-wake"><i></i></span></div>
@@ -686,11 +709,21 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="cq-pad" id="cq-series-wrap"><div class="cq-pills" id="cq-series" role="group" aria-label="Série à programmer"></div></div>
       <div class="cq-pad"><div class="cq-pills cq-sugg" id="cq-sugg" role="group" aria-label="Actions rapides"></div></div>
       <div class="cq-table" id="cq-table"></div>
+      <div class="cq-bar" id="cq-bar">
+        <div class="cq-sel" id="cq-sel" aria-live="polite"></div>
+        <div class="cq-clipinfo" id="cq-clipinfo"></div>
+        <div class="cq-btns">
+          <button type="button" id="cq-b-copy" aria-label="Copier le bloc sélectionné">Copier</button>
+          <button type="button" id="cq-b-paste" aria-label="Coller le bloc à la seconde sélectionnée">Coller</button>
+          <button type="button" id="cq-b-loop" aria-label="Coller le bloc en boucle jusqu'à la fin de l'effort">Boucle</button>
+          <button type="button" id="cq-b-clear" aria-label="Effacer le bloc sélectionné">Effacer</button>
+        </div>
+      </div>
       <div class="cq-count" id="cq-count"></div>
       <div class="row" id="cq-copy-row"><span class="lbl">Copier cette série vers toutes les séries</span><button class="btn ghost" type="button" id="cq-copy">Copier</button></div>
       <div class="row"><span class="lbl">Effacer les actions<small id="cq-clear-sub"></small></span><button class="btn danger" type="button" id="cq-clear">Effacer</button></div>
     </div>
-    <div class="foot">À la seconde indiquée de l'effort, l'action s'affiche à l'écran et, si l'annonce vocale est active, elle est lue à voix haute. Touchez une action rapide pour la placer sur la seconde sélectionnée (une 2<sup>e</sup> touche ajoute « &amp; » pour enchaîner).</div>
+    <div class="foot">À la seconde indiquée de l'effort, l'action s'affiche à l'écran et, si l'annonce vocale est active, elle est lue à voix haute. Touchez une action rapide pour la placer sur la seconde sélectionnée (une 2<sup>e</sup> touche ajoute « &amp; » pour enchaîner). Les boutons rapides se modifient dans Réglages &gt; Actions rapides. Pour copier un bloc : touchez le numéro de sa première seconde, puis celui de sa dernière, puis « Copier » ; sélectionnez ensuite la seconde de destination et touchez « Coller » (« Boucle » répète le bloc jusqu'à la fin de l'effort).</div>
     <div class="group total" style="margin-top:20px"><div class="row"><span>Durée totale</span><b class="num" id="ed-total">0:00</b></div></div>
   </div>
   <div class="ed-foot">
@@ -769,7 +802,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     });
     save('tempo.workouts', workouts); save('tempo.noTabata', true);
   }
+  var QUICK_DEFAULT = ['Jab', 'Direct', 'Crochet', 'Uppercut', 'Esquive', 'Garde', 'Double jab', 'Jab & direct', 'Jab & crochet'];
   var settings = Object.assign({}, DEFAULTS, load('tempo.settings', {}));
+  /* boutons d'actions rapides de l'éditeur, modifiables dans les réglages */
+  if (!Array.isArray(settings.quick)) settings.quick = QUICK_DEFAULT.slice();
   if (settings.theme === 'auto' && !load('tempo.darkdefault', false)) { settings.theme = 'dark'; save('tempo.settings', settings); }
   save('tempo.darkdefault', true);
   var history = load('tempo.history', []);
@@ -912,8 +948,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
 
   /* ---- tableau des actions seconde par seconde ---- */
-  var SUGGEST = ['Jab', 'Direct', 'Crochet', 'Uppercut', 'Esquive', 'Garde', 'Double jab', 'Jab & direct', 'Jab & crochet'];
   var edSet = 0, cqKey = '', cqFocus = 0;
+  var cqSel = null;                     /* bloc sélectionné : { a, b } (secondes, bornes incluses) */
+  var cqClip = load('tempo.clip', null); /* bloc copié : { len, cues: { 1..len : texte } }, conservé d'un minuteur à l'autre */
   function cqInit() {
     if (!Array.isArray(draft.cues)) draft.cues = [];
     for (var i = 0; i < draft.sets; i++) if (!draft.cues[i] || typeof draft.cues[i] !== 'object') draft.cues[i] = {};
@@ -934,8 +971,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     cqMeta();
   }
   function cqRow(m, sec) {
-    var row = el('div', 'cq-row' + (m[sec] ? ' on' : ''));
-    row.appendChild(el('div', 'cq-t', String(sec)));
+    var row = el('div', 'cq-row' + (m[sec] ? ' on' : '') + (cqSel && sec >= cqSel.a && sec <= cqSel.b ? ' sel' : ''));
+    var t = el('button', 'cq-t', String(sec)); t.type = 'button'; t.setAttribute('aria-label', 'Sélectionner la seconde ' + sec);
+    t.addEventListener('click', function () { cqPick(sec); });
+    row.appendChild(t);
     var inp = el('input', 'cq-in'); inp.type = 'text'; inp.maxLength = 40; inp.placeholder = '—'; inp.value = m[sec] || '';
     inp.autocomplete = 'off'; inp.setAttribute('enterkeyhint', 'next'); inp.setAttribute('aria-label', 'Action à la seconde ' + sec);
     inp.addEventListener('focus', function () { cqFocus = sec; });
@@ -958,6 +997,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var shared = cqShared();
     var key = draft.work + '|' + draft.sets + '|' + (shared ? 's' : edSet);
     $('#cq-same').checked = draft.cuesSame !== false;
+    cqClamp();
     $('#cq-same-row').hidden = !(draft.sets > 1);
     $('#cq-series-wrap').hidden = shared;
     $('#cq-copy-row').hidden = shared;
@@ -980,10 +1020,86 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var hd = el('div', 'cq-hd'); hd.appendChild(el('span', null, 'Seconde')); hd.appendChild(el('span', null, 'Action annoncée')); host.appendChild(hd);
     for (var sec = 1; sec <= draft.work; sec++) host.appendChild(cqRow(m, sec));
     cqMeta();
+    cqBar();
   }
-  (function () {
-    var sg = $('#cq-sugg');
-    SUGGEST.forEach(function (word) {
+
+  /* ---- sélection, copier / coller de blocs de secondes ---- */
+  function cqClamp() {
+    if (!cqSel) return;
+    if (cqSel.a > draft.work) cqSel = null; else if (cqSel.b > draft.work) cqSel = { a: cqSel.a, b: draft.work };
+  }
+  /* 1er toucher : une seconde ; 2e toucher sur un autre numéro : tout le bloc entre les deux ; toucher ensuite : nouvelle sélection */
+  function cqPick(n) {
+    if (!cqSel) cqSel = { a: n, b: n };
+    else if (cqSel.a === cqSel.b) cqSel = n === cqSel.a ? null : { a: Math.min(cqSel.a, n), b: Math.max(cqSel.a, n) };
+    else cqSel = { a: n, b: n };
+    cqPaint();
+  }
+  function cqPaint() {
+    $$('#cq-table .cq-row').forEach(function (row, i) {
+      var sec = i + 1, on = !!cqSel && sec >= cqSel.a && sec <= cqSel.b;
+      row.classList.toggle('sel', on);
+      row.querySelector('.cq-t').setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    cqBar();
+  }
+  function cqBar() {
+    var lbl, has = !!cqSel;
+    if (!has) lbl = 'Touchez un numéro de seconde pour sélectionner un bloc.';
+    else if (cqSel.a === cqSel.b) lbl = 'Seconde ' + cqSel.a + ' : touchez un 2e numéro pour étendre le bloc.';
+    else lbl = 'Secondes ' + cqSel.a + ' à ' + cqSel.b + ' sélectionnées (' + (cqSel.b - cqSel.a + 1) + ' s)';
+    $('#cq-sel').textContent = lbl;
+    var n = cqClip ? Object.keys(cqClip.cues).length : 0;
+    $('#cq-clipinfo').textContent = cqClip ? 'Copié : ' + cqClip.len + ' s, ' + n + (n > 1 ? ' actions' : ' action') + (has ? ' · collage dès la seconde ' + cqSel.a : '') : '';
+    $('#cq-b-copy').disabled = !has;
+    $('#cq-b-clear').disabled = !has;
+    $('#cq-b-paste').disabled = !has || !cqClip;
+    $('#cq-b-loop').disabled = !has || !cqClip;
+  }
+  /* reconstruit le tableau sans perdre la position de défilement */
+  function cqRebuild() {
+    var box = $('#cq-table'), top = box.scrollTop;
+    syncCues(true); box.scrollTop = top;
+  }
+  function cqCopy() {
+    if (!cqSel) return;
+    var m = cqMap(), len = cqSel.b - cqSel.a + 1, cues = {};
+    for (var i = 1; i <= len; i++) if (m[cqSel.a + i - 1]) cues[i] = m[cqSel.a + i - 1];
+    cqClip = { len: len, cues: cues }; save('tempo.clip', cqClip);
+    cqBar(); toast('Bloc copié (' + len + ' s)');
+  }
+  function cqPaste(loop) {
+    if (!cqSel || !cqClip) return;
+    var m = cqMap(), a = cqSel.a, L = cqClip.len, written = 0;
+    for (var start = a; start <= draft.work; start += L) {
+      for (var i = 1; i <= L; i++) {
+        var sec = start + i - 1;
+        if (sec > draft.work) break;
+        delete m[sec];
+        if (cqClip.cues[i]) { m[sec] = cqClip.cues[i]; written++; }
+      }
+      if (!loop) break;
+    }
+    cqSel = { a: a, b: Math.min(draft.work, a + L - 1) };
+    cqRebuild();
+    toast(loop ? 'Bloc collé en boucle jusqu’à la fin' : 'Bloc collé à la seconde ' + a);
+  }
+  function cqClearBlock() {
+    if (!cqSel) return;
+    var m = cqMap();
+    for (var s = cqSel.a; s <= cqSel.b; s++) delete m[s];
+    cqRebuild(); toast('Bloc effacé');
+  }
+  $('#cq-b-copy').addEventListener('click', cqCopy);
+  $('#cq-b-paste').addEventListener('click', function () { cqPaste(false); });
+  $('#cq-b-loop').addEventListener('click', function () { cqPaste(true); });
+  $('#cq-b-clear').addEventListener('click', cqClearBlock);
+  /* boutons rapides : lus dans les réglages (settings.quick) */
+  function buildQuick() {
+    var sg = $('#cq-sugg'); sg.textContent = '';
+    var list = settings.quick || [];
+    sg.parentNode.hidden = !list.length;
+    list.forEach(function (word) {
       var b = el('button', 'cq-pill', word); b.type = 'button';
       ['mousedown', 'pointerdown'].forEach(function (ev) { b.addEventListener(ev, function (e) { e.preventDefault(); }); });
       b.addEventListener('click', function () {
@@ -997,6 +1113,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       });
       sg.appendChild(b);
     });
+  }
+  (function () {
+    buildQuick();
     $('#cq-same').addEventListener('change', function () {
       draft.cuesSame = this.checked;
       if (!this.checked) {
@@ -1057,7 +1176,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function openEditor(w) {
     editingId = w ? w.id : null;
     draft = w ? clone(w) : { name: '', prep: 10, work: 30, rest: 15, sets: 8, cycles: 1, cycleRest: 60, cool: 0 };
-    edSet = 0; cqKey = ''; cqFocus = 0;
+    edSet = 0; cqKey = ''; cqFocus = 0; cqSel = null;
     $('#ed-title').textContent = w ? 'Modifier' : 'Nouveau minuteur';
     $('#ed-name').value = draft.name;
     $('#ed-delete').hidden = !w; $('#ed-dup').hidden = !w;
@@ -1538,6 +1657,44 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   armed($('#s-clear-hist'), function () { history = []; save('tempo.history', history); renderHistory(); toast('Historique vidé'); });
   armed($('#s-reset'), function () { workouts = SEEDS(); save('tempo.workouts', workouts); renderHome(); toast('Minuteurs rétablis'); });
 
+  /* ---------- réglages : actions rapides ---------- */
+  function cleanWord(s) { return String(s).replace(/\s+/g, ' ').trim(); }
+  function commitQuick(list) {
+    settings.quick = list; save('tempo.settings', settings);
+    renderQuickSettings(); buildQuick();
+  }
+  function renderQuickSettings() {
+    var host = $('#s-quick'); host.textContent = '';
+    if (!settings.quick.length) { host.appendChild(el('div', 'empty', 'Aucune action rapide. Ajoutez-en une ci-dessous.')); return; }
+    settings.quick.forEach(function (word, i) {
+      var row = el('div', 'row');
+      var inp = el('input', 'qk-in'); inp.type = 'text'; inp.maxLength = 40; inp.value = word; inp.autocomplete = 'off';
+      inp.setAttribute('aria-label', 'Action rapide ' + (i + 1));
+      inp.addEventListener('change', function () {
+        var v = cleanWord(inp.value), q = settings.quick.slice();
+        if (!v) q.splice(i, 1); else q[i] = v;
+        commitQuick(q);
+      });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+      var up = el('button', 'qk-btn', '↑'); up.type = 'button'; up.disabled = i === 0; up.setAttribute('aria-label', 'Monter ' + word);
+      up.addEventListener('click', function () { var q = settings.quick.slice(); q.splice(i - 1, 0, q.splice(i, 1)[0]); commitQuick(q); });
+      var del = el('button', 'qk-btn del', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Supprimer ' + word);
+      del.addEventListener('click', function () { var q = settings.quick.slice(); q.splice(i, 1); commitQuick(q); });
+      row.appendChild(inp); row.appendChild(up); row.appendChild(del);
+      host.appendChild(row);
+    });
+  }
+  function addQuick() {
+    var inp = $('#s-quick-new'), v = cleanWord(inp.value);
+    if (!v) return;
+    if (settings.quick.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) { toast('Cette action existe déjà'); return; }
+    if (settings.quick.length >= 40) { toast('40 actions rapides au maximum'); return; }
+    commitQuick(settings.quick.concat(v)); inp.value = ''; toast('Action rapide ajoutée');
+  }
+  $('#s-quick-add').addEventListener('click', addQuick);
+  $('#s-quick-new').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addQuick(); } });
+  armed($('#s-quick-reset'), function () { commitQuick(QUICK_DEFAULT.slice()); toast('Actions rapides rétablies'); });
+
   /* ---------- keyboard ---------- */
   document.addEventListener('keydown', function (e) {
     if (!run || $('#runner').hidden) return;
@@ -1956,6 +2113,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { ensureAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
 
   /* ---------- init ---------- */
-  applyTheme(); syncSettings(); renderHome(); renderHistory(); buildDial(); buildKeypad(); buildSWDial(); buildRunnerTrack(); restoreLive(); renderDial(); renderSW();
+  applyTheme(); syncSettings(); renderQuickSettings(); renderHome(); renderHistory(); buildDial(); buildKeypad(); buildSWDial(); buildRunnerTrack(); restoreLive(); renderDial(); renderSW();
 })();
 </script>
