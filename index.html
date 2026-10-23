@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261022105011">
+<meta name="app-version" content="20261023005215">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -565,6 +565,34 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   .kp-grid { grid-column: 2; grid-row: 1 / span 2; gap: 8px; max-width: 280px; }
   .kp-key { height: 52px; font-size: 28px; }
 }
+
+/* ---- actions seconde par seconde : éditeur en tableau ---- */
+.cq-pad { padding: 10px 12px 0; }
+.cq-pills { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 10px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.cq-pill { flex: none; min-width: 46px; min-height: 38px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-family: var(--fd); font-size: 17px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; touch-action: manipulation; white-space: nowrap; }
+.cq-pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.cq-pill.has::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: 6px; vertical-align: middle; }
+.cq-sugg .cq-pill { min-height: 34px; font-size: 15px; text-transform: none; letter-spacing: .02em; font-family: var(--f); font-weight: 500; }
+.cq-table { max-height: min(52vh, 460px); overflow-y: auto; border-top: 1px solid var(--line); overscroll-behavior: contain; }
+.cq-hd { position: sticky; top: 0; z-index: 1; display: flex; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--line); padding: 6px 8px 6px 3px; font-family: var(--fd); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.cq-hd span:first-child { flex: none; width: 64px; text-align: right; padding-right: 8px; }
+.cq-row { display: flex; align-items: center; gap: 8px; min-height: 44px; padding-right: 6px; border-left: 3px solid transparent; border-bottom: 1px solid var(--line); }
+.cq-row:last-child { border-bottom: 0; }
+.cq-row.on { border-left-color: var(--accent); background: var(--fill); }
+.cq-t { flex: none; width: 64px; text-align: right; padding-right: 8px; font-family: var(--fd); font-size: 22px; font-weight: 600; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cq-row.on .cq-t { color: var(--accent); }
+.cq-in { flex: 1; min-width: 0; height: 42px; border: 0; background: transparent; color: var(--fg); font: inherit; font-size: 17px; padding: 0 4px; letter-spacing: 0; }
+.cq-in::placeholder { color: var(--muted); opacity: .4; }
+.cq-x { flex: none; width: 36px; height: 36px; display: grid; place-items: center; color: var(--muted); font-size: 22px; line-height: 1; }
+.cq-row:not(.on) .cq-x { visibility: hidden; }
+.cq-count { padding: 10px 16px; font-size: 13px; color: var(--muted); letter-spacing: 0; border-top: 1px solid var(--line); }
+
+/* ---- actions seconde par seconde : affichage en séance ---- */
+#r-cue { text-align: center; margin-bottom: 12px; }
+#r-cue[hidden] { display: none; }
+#r-cue .now { font-family: var(--fd); font-size: clamp(30px, 9vw, 52px); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ph); line-height: 1.05; min-height: 1.05em; overflow-wrap: anywhere; }
+#r-cue .nxt { margin-top: 4px; min-height: 18px; font-family: var(--fd); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: rgba(235,235,245,.6); }
+@media (orientation: landscape) and (max-height: 520px) { #r-cue { margin-bottom: 6px; } #r-cue .now { font-size: clamp(22px, 8vh, 36px); } #r-cue .nxt { font-size: 12px; } }
 </style>
 
 <div class="views" id="views">
@@ -594,7 +622,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><label for="s-volume">Volume</label><input type="range" id="s-volume" min="0.1" max="1" step="0.05"></div>
       <div class="row"><label for="s-count">Compte à rebours<small>Bips avant la fin de chaque phase</small></label>
         <select id="s-count"><option value="0">Aucun</option><option value="3">3 dernières s</option><option value="5">5 dernières s</option><option value="10">10 dernières s</option></select></div>
-      <div class="row"><label for="s-voice">Annonce vocale<small>Lit le nom de la phase et du minuteur à voix haute</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
+      <div class="row"><label for="s-voice">Annonce vocale<small>Lit à voix haute la phase, le minuteur et les actions programmées</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
       <div class="row"><label for="s-vib">Vibration<small>Selon l'appareil</small></label><span class="switch"><input type="checkbox" id="s-vib"><i></i></span></div>
       <div class="row"><label for="s-alert">Son d'alerte<small>Début d'effort, fin de série et de séance</small></label>
         <select id="s-alert"></select></div>
@@ -651,6 +679,18 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <label for="ed-name" style="position:absolute;left:-9999px">Nom du minuteur</label>
     <input class="name-in" id="ed-name" type="text" maxlength="40" placeholder="Nom du minuteur" autocomplete="off">
     <div class="group" id="ed-fields"></div>
+    <div class="foot">Touchez − ou + pour régler à la seconde près (maintenez pour accélérer), ou tapez directement « 1:30 » ou « 90 ».</div>
+    <div class="section-title">Actions seconde par seconde</div>
+    <div class="group" id="cq">
+      <div class="row" id="cq-same-row"><label for="cq-same">Même programme à chaque série<small>Désactivez pour écrire un programme différent par série</small></label><span class="switch"><input type="checkbox" id="cq-same"><i></i></span></div>
+      <div class="cq-pad" id="cq-series-wrap"><div class="cq-pills" id="cq-series" role="group" aria-label="Série à programmer"></div></div>
+      <div class="cq-pad"><div class="cq-pills cq-sugg" id="cq-sugg" role="group" aria-label="Actions rapides"></div></div>
+      <div class="cq-table" id="cq-table"></div>
+      <div class="cq-count" id="cq-count"></div>
+      <div class="row" id="cq-copy-row"><span class="lbl">Copier cette série vers toutes les séries</span><button class="btn ghost" type="button" id="cq-copy">Copier</button></div>
+      <div class="row"><span class="lbl">Effacer les actions<small id="cq-clear-sub"></small></span><button class="btn danger" type="button" id="cq-clear">Effacer</button></div>
+    </div>
+    <div class="foot">À la seconde indiquée de l'effort, l'action s'affiche à l'écran et, si l'annonce vocale est active, elle est lue à voix haute. Touchez une action rapide pour la placer sur la seconde sélectionnée (une 2<sup>e</sup> touche ajoute « &amp; » pour enchaîner).</div>
     <div class="group total" style="margin-top:20px"><div class="row"><span>Durée totale</span><b class="num" id="ed-total">0:00</b></div></div>
   </div>
   <div class="ed-foot">
@@ -677,6 +717,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <div id="r-next"></div>
   </div>
   <div class="r-bottom">
+    <div id="r-cue" hidden aria-live="off"><div class="now" id="r-cue-now"></div><div class="nxt" id="r-cue-next"></div></div>
     <div class="r-bar"><i id="r-bar"></i></div>
     <div class="r-total"><span id="r-elapsed">0:00</span><span id="r-remaining">0:00</span></div>
     <div class="r-controls">
@@ -769,6 +810,25 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     return segs;
   }
   function total(w) { return build(w).reduce(function (a, s) { return a + s.dur; }, 0); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  /* ---------- actions seconde par seconde ----------
+     w.cues : tableau (une entrée par série) d'objets { seconde: "texte" }.
+     La seconde N de l'effort commence quand N-1 secondes se sont écoulées (la 1re seconde = le début de l'effort).
+     w.cuesSame : (défaut vrai) la série 1 sert de programme à toutes les séries et à tous les cycles. */
+  function cuesShared(w) { return w.cuesSame !== false || !(w.sets > 1); }
+  function cueMap(w, set) {
+    if (!w.cues || !w.cues.length) return null;
+    var m = cuesShared(w) ? w.cues[0] : w.cues[set - 1];
+    return m && Object.keys(m).length ? m : null;
+  }
+  function cueCount(m) { var n = 0; if (m) Object.keys(m).forEach(function (k) { if (String(m[k]).trim()) n++; }); return n; }
+  function cueTotal(w) {
+    if (!w.cues) return 0;
+    if (cuesShared(w)) return cueCount(w.cues[0]) * (w.sets || 1);
+    var n = 0; for (var i = 0; i < w.sets; i++) n += cueCount(w.cues[i]); return n;
+  }
+  function nextCue(m, after, dur) { for (var k = after + 1; k <= dur; k++) if (m[k]) return k; return 0; }
   function toast(msg) {
     var t = $('#toast'); t.textContent = msg; t.hidden = false;
     clearTimeout(toast.t); toast.t = setTimeout(function () { t.hidden = true; }, 2200);
@@ -799,6 +859,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var core = w.sets + ' × ' + fmt(w.work);
     if (w.rest > 0) core += ' / ' + fmt(w.rest);
     if (w.cycles > 1) core = w.cycles + ' cycles · ' + core;
+    var nc = cueTotal(w);
+    if (nc) core += ' · ' + nc + (nc > 1 ? ' actions' : ' action');
     return core;
   }
   function renderHome() {
@@ -834,10 +896,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     ['cool', 'Retour au calme', 'time', 0, 3599, 'cool']
   ];
   var draft = null, editingId = null, inputs = {}, rows = {};
-  function stepFor(kind, v, mult) {
-    if (kind === 'count') return 1;
-    var base = v < 60 ? 5 : (v < 300 ? 15 : 30);
-    return base * (mult || 1);
+  /* Un appui = 1 seconde ; en maintenant, le pas passe à 5, 15 puis 30 secondes. */
+  function stepFor(kind, n) {
+    if (kind === 'count' || n <= 10) return 1;
+    return n <= 20 ? 5 : (n <= 32 ? 15 : 30);
   }
   function refreshEditor() {
     FIELDS.forEach(function (f) {
@@ -846,7 +908,113 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     });
     rows.cycleRest.classList.toggle('dim', draft.cycles < 2);
     $('#ed-total').textContent = fmt(total(draft));
+    syncCues();
   }
+
+  /* ---- tableau des actions seconde par seconde ---- */
+  var SUGGEST = ['Jab', 'Direct', 'Crochet', 'Uppercut', 'Esquive', 'Garde', 'Double jab', 'Jab & direct', 'Jab & crochet'];
+  var edSet = 0, cqKey = '', cqFocus = 0;
+  function cqInit() {
+    if (!Array.isArray(draft.cues)) draft.cues = [];
+    for (var i = 0; i < draft.sets; i++) if (!draft.cues[i] || typeof draft.cues[i] !== 'object') draft.cues[i] = {};
+  }
+  function cqShared() { return cuesShared(draft); }
+  function cqMap() { return cqShared() ? draft.cues[0] : draft.cues[edSet]; }
+  function cqMeta() {
+    var m = cqMap(), n = cueCount(m);
+    var where = cqShared() ? (draft.sets > 1 ? 'toutes les séries' : 'la série') : 'la série ' + (edSet + 1);
+    $('#cq-count').textContent = n ? n + (n > 1 ? ' actions' : ' action') + ' pour ' + where : 'Aucune action pour ' + where + '. Touchez une ligne du tableau et écrivez.';
+    $('#cq-clear-sub').textContent = cqShared() ? (draft.sets > 1 ? 'Programme commun à toutes les séries' : '') : 'Série ' + (edSet + 1) + ' uniquement';
+    $$('#cq-series .cq-pill').forEach(function (p, i) { p.classList.toggle('has', cueCount(draft.cues[i]) > 0); });
+  }
+  function cqSet(m, sec, val, row) {
+    var v = val.replace(/\s+/g, ' ').replace(/^\s+/, '');
+    if (v.trim()) m[sec] = v; else delete m[sec];
+    row.classList.toggle('on', !!m[sec]);
+    cqMeta();
+  }
+  function cqRow(m, sec) {
+    var row = el('div', 'cq-row' + (m[sec] ? ' on' : ''));
+    row.appendChild(el('div', 'cq-t', String(sec)));
+    var inp = el('input', 'cq-in'); inp.type = 'text'; inp.maxLength = 40; inp.placeholder = '—'; inp.value = m[sec] || '';
+    inp.autocomplete = 'off'; inp.setAttribute('enterkeyhint', 'next'); inp.setAttribute('aria-label', 'Action à la seconde ' + sec);
+    inp.addEventListener('focus', function () { cqFocus = sec; });
+    inp.addEventListener('input', function () { cqSet(m, sec, inp.value, row); });
+    inp.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      var nx = row.nextElementSibling, ni = nx && nx.querySelector('input');
+      if (ni) ni.focus(); else inp.blur();
+    });
+    var x = el('button', 'cq-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Effacer la seconde ' + sec);
+    x.addEventListener('click', function () { inp.value = ''; cqSet(m, sec, '', row); });
+    row.appendChild(inp); row.appendChild(x);
+    return row;
+  }
+  function syncCues(force) {
+    cqInit();
+    if (edSet >= draft.sets) edSet = draft.sets - 1;
+    if (edSet < 0) edSet = 0;
+    var shared = cqShared();
+    var key = draft.work + '|' + draft.sets + '|' + (shared ? 's' : edSet);
+    $('#cq-same').checked = draft.cuesSame !== false;
+    $('#cq-same-row').hidden = !(draft.sets > 1);
+    $('#cq-series-wrap').hidden = shared;
+    $('#cq-copy-row').hidden = shared;
+    if (key === cqKey && !force) { cqMeta(); return; }
+    var ser = $('#cq-series');
+    if (!shared) {
+      ser.textContent = '';
+      for (var i = 0; i < draft.sets; i++) {
+        (function (i) {
+          var p = el('button', 'cq-pill', 'S' + (i + 1)); p.type = 'button'; p.setAttribute('aria-pressed', i === edSet ? 'true' : 'false');
+          p.setAttribute('aria-label', 'Série ' + (i + 1));
+          p.addEventListener('click', function () { edSet = i; cqFocus = 0; syncCues(true); });
+          ser.appendChild(p);
+        })(i);
+      }
+      var cur = ser.children[edSet]; if (cur && cur.scrollIntoView) { try { cur.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) {} }
+    }
+    cqKey = key;
+    var m = cqMap(), host = $('#cq-table'); host.textContent = '';
+    var hd = el('div', 'cq-hd'); hd.appendChild(el('span', null, 'Seconde')); hd.appendChild(el('span', null, 'Action annoncée')); host.appendChild(hd);
+    for (var sec = 1; sec <= draft.work; sec++) host.appendChild(cqRow(m, sec));
+    cqMeta();
+  }
+  (function () {
+    var sg = $('#cq-sugg');
+    SUGGEST.forEach(function (word) {
+      var b = el('button', 'cq-pill', word); b.type = 'button';
+      ['mousedown', 'pointerdown'].forEach(function (ev) { b.addEventListener(ev, function (e) { e.preventDefault(); }); });
+      b.addEventListener('click', function () {
+        var m = cqMap(), f = cqFocus;
+        if (!f || f > draft.work) { toast('Touchez d’abord une seconde dans le tableau'); return; }
+        var cur = (m[f] || '').trim();
+        m[f] = cur ? cur + ' & ' + word : word;
+        var row = $('#cq-table').children[f];
+        if (row) { row.querySelector('input').value = m[f]; row.classList.add('on'); }
+        cqMeta();
+      });
+      sg.appendChild(b);
+    });
+    $('#cq-same').addEventListener('change', function () {
+      draft.cuesSame = this.checked;
+      if (!this.checked) {
+        for (var i = 1; i < draft.sets; i++) if (!cueCount(draft.cues[i])) draft.cues[i] = clone(draft.cues[0]);
+        edSet = 0;
+      }
+      cqFocus = 0; syncCues(true);
+    });
+    $('#cq-copy').addEventListener('click', function () {
+      var src = cqMap();
+      for (var i = 0; i < draft.sets; i++) if (i !== edSet) draft.cues[i] = clone(src);
+      cqMeta(); toast('Copié vers toutes les séries');
+    });
+    armed($('#cq-clear'), function () {
+      var m = cqMap(); Object.keys(m).forEach(function (k) { delete m[k]; });
+      syncCues(true); toast('Actions effacées');
+    });
+  })();
   function setField(f, v) {
     v = Math.min(f[4], Math.max(f[3], v));
     draft[f[0]] = v; refreshEditor();
@@ -868,10 +1036,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       inp.addEventListener('change', function () { setField(f, f[2] === 'time' ? parseTime(inp.value) : (parseInt(inp.value, 10) || f[3])); });
       inputs[f[0]] = inp;
       [[minus, -1], [plus, 1]].forEach(function (pair) {
-        var b = pair[0], dir = pair[1], timer = null, n = 0;
-        function tick() { n++; setField(f, draft[f[0]] + dir * stepFor(f[2], draft[f[0]] + (dir < 0 ? -1 : 0), n > 8 ? 5 : 1)); }
-        function stop() { clearInterval(timer); timer = null; }
-        b.addEventListener('pointerdown', function (e) { e.preventDefault(); n = 0; tick(); stop(); timer = setInterval(function () { if (n > 0) tick(); }, 130); });
+        var b = pair[0], dir = pair[1], timer = null, delay = null, n = 0;
+        function tick() {
+          n++;
+          var v = draft[f[0]], st = stepFor(f[2], n);
+          if (st > 1) v = dir > 0 ? (Math.floor(v / st) + 1) * st : (Math.ceil(v / st) - 1) * st; else v += dir;
+          setField(f, v);
+        }
+        function stop() { clearTimeout(delay); clearInterval(timer); delay = null; timer = null; }
+        b.addEventListener('pointerdown', function (e) { e.preventDefault(); stop(); n = 0; tick(); delay = setTimeout(function () { timer = setInterval(tick, 110); }, 380); });
         ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, stop); });
         b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n = 0; tick(); } });
       });
@@ -883,7 +1056,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   var deleteArmed = false;
   function openEditor(w) {
     editingId = w ? w.id : null;
-    draft = w ? Object.assign({}, w) : { name: '', prep: 10, work: 30, rest: 15, sets: 8, cycles: 1, cycleRest: 60, cool: 0 };
+    draft = w ? clone(w) : { name: '', prep: 10, work: 30, rest: 15, sets: 8, cycles: 1, cycleRest: 60, cool: 0 };
+    edSet = 0; cqKey = ''; cqFocus = 0;
     $('#ed-title').textContent = w ? 'Modifier' : 'Nouveau minuteur';
     $('#ed-name').value = draft.name;
     $('#ed-delete').hidden = !w; $('#ed-dup').hidden = !w;
@@ -894,6 +1068,16 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   function commitEditor() {
     draft.name = $('#ed-name').value.trim() || 'Mon minuteur';
+    /* nettoyage : textes rognés, secondes au-delà de l'effort et séries supprimées écartées */
+    var cleaned = (draft.cues || []).slice(0, draft.sets).map(function (m) {
+      var o = {};
+      Object.keys(m || {}).forEach(function (k) {
+        var n = parseInt(k, 10), v = String(m[k]).trim();
+        if (n >= 1 && n <= draft.work && v) o[n] = v;
+      });
+      return o;
+    });
+    if (cleaned.some(function (m) { return Object.keys(m).length; })) draft.cues = cleaned; else delete draft.cues;
     if (editingId) {
       var i = workouts.findIndex(function (x) { return x.id === editingId; });
       draft.id = editingId; if (i >= 0) workouts[i] = draft; else workouts.push(draft);
@@ -905,7 +1089,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   $('#ed-save').addEventListener('click', function () { commitEditor(); $('#editor').hidden = true; toast('Minuteur enregistré'); });
   $('#ed-start').addEventListener('click', function () { var w = commitEditor(); $('#editor').hidden = true; startRun(w); });
   $('#ed-dup').addEventListener('click', function () {
-    var c = Object.assign({}, draft, { id: uid(), name: ($('#ed-name').value.trim() || 'Mon minuteur') + ' (copie)' });
+    var c = Object.assign(clone(draft), { id: uid(), name: ($('#ed-name').value.trim() || 'Mon minuteur') + ' (copie)' });
     workouts.push(c); save('tempo.workouts', workouts); renderHome(); $('#editor').hidden = true; toast('Minuteur dupliqué');
   });
   $('#ed-delete').addEventListener('click', function () {
@@ -1096,11 +1280,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   function vibrate(p) { if (settings.vibrate) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} } }
   /* ---------- voice ---------- */
-  function speak(text) {
+  function speak(text, queue) {
     if (!settings.voice) return;
     try {
       if (!window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
+      if (!queue) window.speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance(text); u.lang = 'fr-FR'; u.volume = settings.volume;
       window.speechSynthesis.speak(u);
     } catch (e) {}
@@ -1125,7 +1309,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var segs = build(w);
     if (!segs.length) { toast('Ce minuteur est vide'); return; }
     ensureAudio();
-    run = { w: w, segs: segs, i: 0, end: 0, paused: false, pausedRem: 0, lastSec: -1, finished: false, totalDur: segs.reduce(function (a, s) { return a + s.dur; }, 0) };
+    run = { w: w, segs: segs, i: 0, end: 0, paused: false, pausedRem: 0, lastSec: -1, cueSec: 0, finished: false, totalDur: segs.reduce(function (a, s) { return a + s.dur; }, 0) };
     $('#runner').hidden = false; $('#r-confirm').hidden = true; $('#r-done').hidden = true; $('#runner').classList.remove('paused');
     $('#r-ico').innerHTML = ICO_PAUSE; $('#r-toggle').setAttribute('aria-label', 'Pause');
     $('#r-name').textContent = w.name;
@@ -1139,7 +1323,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function enterSeg(i, carryMs) {
     run.i = i; var s = run.segs[i];
     run.end = Date.now() + s.dur * 1000 - (carryMs || 0);
-    run.lastSec = -1;
+    run.lastSec = -1; run.cueSec = 0;
     $('#runner').dataset.phase = s.type;
     setPhase(phaseLabel(s.type));
     var meta = '';
@@ -1153,6 +1337,34 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     else if (s.type === 'prep') { tone(660, 300); }
     else { alertSound('setEnd'); vibrate([250, 100, 250, 100, 250]); }
     speak(phaseLabel(s.type));
+    renderCue(1);
+  }
+  /* Action en cours (la dernière déjà passée) et suivante, affichées sous le cadran pendant l'effort. */
+  function renderCue(secIdx) {
+    var box = $('#r-cue'), s = run.segs[run.i];
+    var m = s.type === 'work' ? cueMap(run.w, s.set) : null;
+    if (!m) { box.hidden = true; return; }
+    box.hidden = false;
+    var cur = '', k;
+    for (k = secIdx; k >= 1; k--) if (m[k]) { cur = m[k]; break; }
+    var nk = nextCue(m, secIdx, s.dur);
+    $('#r-cue-now').textContent = cur;
+    $('#r-cue-next').textContent = nk ? 'Ensuite : ' + m[nk] + ' · dans ' + (nk - secIdx) + ' s' : '';
+  }
+  /* Quand une nouvelle seconde de l'effort commence, annonce l'action programmée (si plusieurs secondes ont été sautées, seule la dernière est lue). */
+  function cueTick(remMs) {
+    var s = run.segs[run.i];
+    if (s.type !== 'work') return;
+    var m = cueMap(run.w, s.set); if (!m) return;
+    var secIdx = Math.min(s.dur, Math.floor((s.dur * 1000 - remMs) / 1000) + 1);
+    if (secIdx <= run.cueSec) return;
+    var hit = 0, k;
+    for (k = run.cueSec + 1; k <= secIdx; k++) if (m[k]) hit = k;
+    var first = run.cueSec === 0;
+    run.cueSec = secIdx;
+    renderCue(secIdx);
+    /* au début de l'effort, l'action est lue après le nom de la phase ; ensuite elle coupe la précédente pour rester synchrone */
+    if (hit) speak(m[hit], first);
   }
   function elapsedTotal() {
     var done = 0; for (var k = 0; k < run.i; k++) done += run.segs[k].dur;
@@ -1188,6 +1400,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       rem = run.end - Date.now();
     }
     var sec = draw(Math.max(0, rem));
+    cueTick(Math.max(0, rem));
     if (actx && settings.sound && actx.state !== 'running') soundHint();
     if (sec !== run.lastSec) {
       run.lastSec = sec;
@@ -1207,6 +1420,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#r-count').textContent = '0:00'; ring.style.strokeDashoffset = String(C);
     drawSub(0);
     $('#r-bar').style.width = '100%';
+    $('#r-cue').hidden = true;
     alertSound('end'); vibrate([300, 100, 300, 100, 500]);
     speak('Séance terminée');
     logSession(true, run.totalDur);
@@ -1227,6 +1441,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       run.paused = true; run.pausedRem = Math.max(0, run.end - Date.now());
       $('#r-ico').innerHTML = ICO_PLAY; $('#r-toggle').setAttribute('aria-label', 'Reprendre'); $('#runner').classList.add('paused');
       setPhase('En pause');
+      try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
       releaseWake();
     } else {
       run.paused = false; run.end = Date.now() + run.pausedRem;

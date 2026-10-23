@@ -6,9 +6,10 @@ Une seule page HTML, sans dépendance ni étape de compilation.
 ## Fonctions
 
 - **Minuteurs d'intervalles** : préparation, effort, repos, séries, cycles, repos entre cycles et retour au calme. Quatre modèles fournis (HIIT 40/20, Circuit training, Gainage, Boxe 3 min), modifiables, duplicables et supprimables.
+- **Actions seconde par seconde** : dans l'éditeur, un tableau permet d'associer une action à chaque seconde de l'effort (« Jab » à la 1<sup>re</sup> seconde, « Jab & crochet » à la 3<sup>e</sup>…), avec des actions rapides à toucher pour enchaîner les coups. Le programme peut être commun à toutes les séries ou différent pour chacune (copie d'une série vers toutes les autres). Pendant la séance, l'action en cours et la suivante s'affichent sous le cadran, et elles sont lues à voix haute quand l'annonce vocale est active. Tous les temps se règlent à la seconde près (− / + au pas d'une seconde, accélération en maintenant, saisie directe « 1:30 » ou « 90 »).
 - **Séance plein écran** : grand décompte, anneau de progression coloré selon la phase, pause, phase précédente et suivante.
 - **Chrono** : minuteur à cadran (de 1 à 60 minutes, réglage au doigt) et chronomètre avec aiguille des secondes et tours (le plus rapide en vert, le plus lent en rouge).
-- **Alertes** : sept sons au choix (gong, ring de boxe, klaxon de stade, sifflet de coach, montre sport, marimba, synthwave), compte à rebours sonore, annonce vocale en français (nom de la phase, le nom du minuteur remplaçant « Effort »), vibration, écran maintenu allumé.
+- **Alertes** : sept sons au choix (gong, ring de boxe, klaxon de stade, sifflet de coach, montre sport, marimba, synthwave), compte à rebours sonore, annonce vocale en français (nom de la phase, le nom du minuteur remplaçant « Effort », et les actions programmées seconde par seconde), vibration, écran maintenu allumé.
 - **Historique** des séances avec bilan de la semaine.
 - Thème sombre par défaut, thème clair en option.
 
