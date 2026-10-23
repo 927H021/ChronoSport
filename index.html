@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023113658">
+<meta name="app-version" content="20261023114628">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -662,6 +662,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <div class="group" style="margin-top:12px">
       <div class="row"><input class="qk-in" id="s-quick-new" type="text" maxlength="40" placeholder="Nouvelle action (ex. Crochet bas)" autocomplete="off" aria-label="Nouvelle action rapide"><button class="btn ghost" type="button" id="s-quick-add">Ajouter</button></div>
       <div class="row"><span class="lbl">Rétablir les actions rapides d'origine</span><button class="btn danger" type="button" id="s-quick-reset">Rétablir</button></div>
+      <div class="row"><span class="lbl">Utiliser la liste actuelle comme liste d'origine</span><button class="btn ghost" type="button" id="s-quick-setorigin">Enregistrer</button></div>
     </div>
     <div class="foot">Ces boutons s'affichent au-dessus du tableau d'actions dans l'éditeur d'un minuteur. Modifiez le texte directement, touchez ↑ pour monter un bouton ou × pour le supprimer.</div>
     </div>
@@ -827,6 +828,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   var settings = Object.assign({}, DEFAULTS, load('tempo.settings', {}));
   /* boutons d'actions rapides de l'éditeur, modifiables dans les réglages */
   if (!Array.isArray(settings.quick)) settings.quick = QUICK_DEFAULT.slice();
+  /* les actions rapides actuelles deviennent celles « d'origine » (utilisées par Rétablir) */
+  if (!Array.isArray(settings.quickOrigin)) { settings.quickOrigin = settings.quick.slice(); save('tempo.settings', settings); }
   if (settings.theme === 'auto' && !load('tempo.darkdefault', false)) { settings.theme = 'dark'; save('tempo.settings', settings); }
   save('tempo.darkdefault', true);
   var history = load('tempo.history', []);
@@ -1837,7 +1840,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   });
   $('#s-quick-add').addEventListener('click', addQuick);
   $('#s-quick-new').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addQuick(); } });
-  armed($('#s-quick-reset'), function () { commitQuick(QUICK_DEFAULT.slice()); toast('Actions rapides rétablies'); });
+  armed($('#s-quick-reset'), function () { commitQuick(settings.quickOrigin.slice()); toast('Actions rapides rétablies'); });
+  $('#s-quick-setorigin').addEventListener('click', function () { settings.quickOrigin = settings.quick.slice(); save('tempo.settings', settings); toast('Liste actuelle enregistrée comme liste d’origine'); });
 
   /* ---------- keyboard ---------- */
   document.addEventListener('keydown', function (e) {
