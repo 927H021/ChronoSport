@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023062151">
+<meta name="app-version" content="20261023063929">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -599,6 +599,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .cq-btns { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
 .cq-hd span:first-child { white-space: nowrap; letter-spacing: .06em; font-size: 12px; }
 .cq-btns button { min-height: 40px; padding: 0 2px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--accent); font-family: var(--fd); font-size: 16px; font-weight: 600; letter-spacing: 0; text-transform: none; touch-action: manipulation; overflow: hidden; white-space: nowrap; }
+/* clavier ouvert / saisie en cours : on libère la place, l'en-tête collant (boutons rapides) reste visible */
+#editor.kb .ed-foot, #editor.kb .cq-bar { display: none; }
 @media (max-width: 380px) { .cq-btns { gap: 3px; } .cq-btns button { font-size: 14px; } }
 .cq-btns button:disabled { opacity: .35; cursor: default; }
 .qk-in { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--fg); font: inherit; font-size: 17px; padding: 8px 0; letter-spacing: 0; }
@@ -912,8 +914,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var core = w.sets + ' × ' + fmt(w.work);
     if (w.rest > 0) core += ' / ' + fmt(w.rest);
     if (w.cycles > 1) core = w.cycles + ' cycles · ' + core;
-    var nc = cueTotal(w);
-    if (nc) core += ' · ' + nc + (nc > 1 ? ' actions' : ' action');
+    var nc = settings.quickOn === false ? 0 : cueTotal(w);   /* « N actions » n'apparaît que si Actions rapides est activé */
+    if (nc) core +=' · ' + nc + (nc > 1 ? ' actions' : ' action');
     return core;
   }
   function renderHome() {
@@ -1207,6 +1209,48 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       host.appendChild(row);
     });
   }
+  /* ---- clavier mobile ----
+     Quand le clavier s'ouvre, l'éditeur épouse la zone réellement visible (visualViewport) : l'en-tête collant avec les
+     boutons rapides reste à l'écran, le pied de page et la barre de bloc se masquent pendant la saisie, et la ligne
+     en cours de saisie est ramenée juste sous l'en-tête collant. */
+  var fitEditor = function () {};
+  (function () {
+    var ed = $('#editor'), vv = window.visualViewport;
+    function typing() {
+      var a = document.activeElement;
+      return !!(a && ed.contains(a) && a.tagName === 'INPUT' && a.type === 'text');
+    }
+    function revealRow(inp) {
+      var body = $('.ed-body'), st = $('#cq-sticky');
+      if (!inp || !body || !st || !st.offsetParent) return;
+      var top = st.getBoundingClientRect().bottom + 4, bottom = body.getBoundingClientRect().bottom - 8, r = inp.getBoundingClientRect();
+      if (r.top < top) body.scrollTop -= top - r.top;
+      else if (r.bottom > bottom) body.scrollTop += r.bottom - bottom;
+    }
+    /* tant qu'un doigt (ou la souris) est posé dans l'éditeur, la mise en page ne bouge pas : sinon, toucher un bouton
+       pendant une saisie ferait perdre le focus, réafficher le pied de page et décaler la cible avant le relâchement */
+    var pressing = false;
+    ed.addEventListener('pointerdown', function () { pressing = true; }, true);
+    ['pointerup', 'pointercancel'].forEach(function (t) {
+      window.addEventListener(t, function () { if (pressing) { pressing = false; setTimeout(fitEditor, 80); } }, true);
+    });
+    fitEditor = function () {
+      if (ed.hidden) { ed.classList.remove('kb'); ed.style.top = ''; ed.style.height = ''; return; }
+      if (pressing) return;
+      var vvKb = !!vv && vv.height < window.innerHeight - 100;
+      ed.classList.toggle('kb', vvKb || typing());
+      ed.style.top = vvKb ? vv.offsetTop + 'px' : '';
+      ed.style.height = vvKb ? vv.height + 'px' : '';
+      var st = $('#cq-sticky'), body = $('.ed-body');
+      if (body) body.style.scrollPaddingTop = ((st && st.offsetParent ? st.offsetHeight : 0) + 6) + 'px';
+      var a = document.activeElement;
+      if (a && a.classList && a.classList.contains('cq-in')) revealRow(a);
+    };
+    if (vv) { vv.addEventListener('resize', fitEditor); vv.addEventListener('scroll', fitEditor); }
+    window.addEventListener('orientationchange', function () { setTimeout(fitEditor, 300); });
+    ed.addEventListener('focusin', function () { fitEditor(); setTimeout(fitEditor, 120); setTimeout(fitEditor, 400); });
+    ed.addEventListener('focusout', function () { setTimeout(fitEditor, 150); });
+  })();
   var deleteArmed = false;
   function openEditor(w) {
     editingId = w ? w.id : null;
@@ -1219,6 +1263,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     buildEditorFields(); refreshEditor();
     $('#editor').hidden = false;
     $('.ed-body').scrollTop = 0;
+    fitEditor();
   }
   function commitEditor() {
     draft.name = $('#ed-name').value.trim() || 'Mon minuteur';
@@ -1753,7 +1798,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   $('#s-quick-on').addEventListener('change', function () {
     settings.quickOn = this.checked; save('tempo.settings', settings);
-    $('#s-quick-wrap').hidden = !this.checked; buildQuick();
+    $('#s-quick-wrap').hidden = !this.checked; buildQuick(); renderHome();
   });
   $('#s-quick-add').addEventListener('click', addQuick);
   $('#s-quick-new').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addQuick(); } });
