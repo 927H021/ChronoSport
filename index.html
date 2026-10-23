@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023114628">
+<meta name="app-version" content="20261023115429">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1056,6 +1056,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (!cqSel) cqSel = { a: n, b: n };
     else if (cqSel.a === cqSel.b) cqSel = n === cqSel.a ? null : { a: Math.min(cqSel.a, n), b: Math.max(cqSel.a, n) };
     else cqSel = { a: n, b: n };
+    cqFocus = cqSel ? cqSel.a : 0;   /* les actions rapides visent la seconde qu'on vient de sélectionner */
     cqPaint();
   }
   function cqPaint() {
