@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023063929">
+<meta name="app-version" content="20261023064653">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1192,7 +1192,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       inp.addEventListener('change', function () { setField(f, f[2] === 'time' ? parseTime(inp.value) : (parseInt(inp.value, 10) || f[3])); });
       inputs[f[0]] = inp;
       [[minus, -1], [plus, 1]].forEach(function (pair) {
-        var b = pair[0], dir = pair[1], timer = null, delay = null, n = 0;
+        var b = pair[0], dir = pair[1], timer = null, delay = null, n = 0, held = false, live = false, x0 = 0, y0 = 0;
         function tick() {
           n++;
           var v = draft[f[0]], st = stepFor(f[2], n);
@@ -1200,8 +1200,17 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
           setField(f, v);
         }
         function stop() { clearTimeout(delay); clearInterval(timer); delay = null; timer = null; }
-        b.addEventListener('pointerdown', function (e) { e.preventDefault(); stop(); n = 0; tick(); delay = setTimeout(function () { timer = setInterval(tick, 110); }, 380); });
-        ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, stop); });
+        /* Un toucher simple compte au relâchement ; un appui long répète (et accélère). Un défilement ou un glissement
+           commencé sur le bouton n'a aucun effet : sinon faire défiler l'éditeur changerait des valeurs sans le vouloir. */
+        b.addEventListener('pointerdown', function (e) {
+          stop(); n = 0; held = false; live = true; x0 = e.clientX; y0 = e.clientY;
+          delay = setTimeout(function () { held = true; tick(); timer = setInterval(tick, 110); }, 380);
+        });
+        b.addEventListener('pointermove', function (e) {
+          if (live && (Math.abs(e.clientX - x0) > 8 || Math.abs(e.clientY - y0) > 8)) { live = false; stop(); }
+        });
+        b.addEventListener('pointerup', function () { if (live && !held) tick(); live = false; stop(); });
+        ['pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, function () { live = false; stop(); }); });
         b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n = 0; tick(); } });
       });
       st.appendChild(minus); st.appendChild(inp); st.appendChild(plus);
