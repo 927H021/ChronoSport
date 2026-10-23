@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023071533">
+<meta name="app-version" content="20261023072242">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1308,12 +1308,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   });
 
   /* ---------- audio / feedback ---------- */
+  /* Mixage : à déclarer dès le chargement, avant tout son, pour ne pas interrompre la musique. */
+  function setMixSession() { try { if (navigator.audioSession) navigator.audioSession.type = (settings.mix !== false) ? 'ambient' : 'playback'; } catch (e) {} }
+  setMixSession();
   var actx = null;
   function ensureAudio() {
     try {
       if (actx && actx.state === 'closed') { actx = null; master = null; }
       if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { actx = new AC(); master = null; } }
-      try { if (navigator.audioSession) navigator.audioSession.type = 'ambient'; } catch (e2) {}
+      setMixSession();
       if (actx && actx.state !== 'running') {
         var pr = actx.resume(); if (pr && pr.catch) pr.catch(function () {});
         try { var sb = actx.createBuffer(1, 1, 22050), ss = actx.createBufferSource(); ss.buffer = sb; ss.connect(actx.destination); ss.start(0); } catch (e3) {}
@@ -1509,6 +1512,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (!settings.voice) return;
     try {
       if (!window.speechSynthesis) return;
+      setMixSession();
       if (!queue) window.speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance(text); u.volume = settings.volume;
       if (settings.voiceEn) {
@@ -1757,6 +1761,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     sel.addEventListener('change', function () { settings.alert = sel.value; save('tempo.settings', settings); ensureAudio(); alertSound('setEnd'); vibrate([100]); });
   })();
   bindSetting('#s-mix', 'mix', function (e) { return e.checked; });
+  $('#s-mix').addEventListener('input', setMixSession);
   bindSetting('#s-vib', 'vibrate', function (e) { return e.checked; });
   bindSetting('#s-wake', 'wake', function (e) { return e.checked; });
   $('#s-test').addEventListener('click', function () { ensureAudio(); alertSound('setEnd'); vibrate([150]); speak(tr('Test', 'Voice test')); });
