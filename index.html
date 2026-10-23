@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023072242">
+<meta name="app-version" content="20261023073205">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -874,7 +874,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
      w.cuesSame : (défaut vrai) la série 1 sert de programme à toutes les séries et à tous les cycles. */
   function cuesShared(w) { return w.cuesSame !== false || !(w.sets > 1); }
   function cueMap(w, set) {
-    if (!w.cues || !w.cues.length) return null;
+    if (settings.quickOn === false || !w.cues || !w.cues.length) return null;
     var m = cuesShared(w) ? w.cues[0] : w.cues[set - 1];
     return m && Object.keys(m).length ? m : null;
   }
