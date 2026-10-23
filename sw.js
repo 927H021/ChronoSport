@@ -1,5 +1,5 @@
 /* ChronoSport service worker : fonctionne hors connexion, reste à jour dès qu'il y a du réseau. */
-var CACHE = 'chronosport-v4';
+var CACHE = 'chronosport-v5';
 var CORE = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon-32.png'];
 
 self.addEventListener('install', function (e) {
