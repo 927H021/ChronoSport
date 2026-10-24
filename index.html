@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261023125309">
+<meta name="app-version" content="20261024180430">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -725,6 +725,18 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <input class="name-in" id="ed-name" type="text" maxlength="40" placeholder="Nom du minuteur" autocomplete="off">
     <div class="group" id="ed-fields"></div>
     <div class="foot">Touchez − ou + pour régler à la seconde près (maintenez pour accélérer), ou tapez directement « 1:30 » ou « 90 ».</div>
+    <div id="bt-section">
+    <div class="section-title">Son répété pendant l'effort</div>
+    <div class="group">
+      <div class="row"><label for="bt-on">Son régulier<small>Un son à intervalle fixe pendant chaque effort (se mélange à la musique)</small></label><span class="switch"><input type="checkbox" id="bt-on"><i></i></span></div>
+      <div id="bt-opts">
+      <div class="row"><label for="bt-sound">Son</label><select id="bt-sound"></select></div>
+      <div class="row"><label for="bt-every">Toutes les (secondes)</label><input type="number" id="bt-every" inputmode="numeric" min="1" max="600" step="1" style="width:84px;text-align:right"></div>
+      <div class="row"><label for="bt-vol">Volume</label><input type="range" id="bt-vol" min="0.1" max="1" step="0.05"></div>
+      <div class="row"><span class="lbl">Écouter</span><button class="btn ghost" type="button" id="bt-test">Tester</button></div>
+      </div>
+    </div>
+    </div>
     <div id="cq-section">
     <div class="section-title">Actions seconde par seconde</div>
     <div class="group" id="cq">
@@ -1315,7 +1327,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#ed-name').value = draft.name;
     $('#ed-delete').hidden = !isEdit; $('#ed-dup').hidden = !isEdit;
     deleteArmed = false; $('#ed-delete').textContent = 'Supprimer';
-    buildEditorFields(); refreshEditor();
+    buildEditorFields(); refreshEditor(); if (window.syncBeatUI) window.syncBeatUI();
     $('#editor').hidden = false;
     $('.ed-body').scrollTop = 0;
     fitEditor();
@@ -1522,6 +1534,58 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     try { fn(kind, actx.currentTime + (delaySec || 0), gain, out, nodes); } catch (e) {}
     return nodes;
   }
+  /* ---------- son répété (par minuteur) ---------- */
+  var BEAT_LIST = [['criquet', 'Criquet'], ['carraca', 'Carraca (crécelle)'], ['clap', 'Claquement de mains'], ['tic', 'Métronome'], ['cloche', 'Cloche de vache'], ['maracas', 'Maracas'], ['bip', 'Bip']];
+  function beatSound(kind, vol) {
+    if (!actx) return;
+    try {
+      var out = actx.createGain(); out.gain.value = Math.max(0.05, Math.min(1, vol)); out.connect(masterOut());
+      var t = actx.currentTime + 0.02, nodes = [], i;
+      if (kind === 'criquet') {
+        for (i = 0; i < 4; i++) note({ type: 'sine', f: 4300, t: t + i * 0.055, atk: 0.004, hold: 0.02, rel: 0.025, peak: 0.5, out: out, nodes: nodes });
+        for (i = 0; i < 4; i++) note({ type: 'sine', f: 4300, t: t + 0.32 + i * 0.055, atk: 0.004, hold: 0.02, rel: 0.025, peak: 0.45, out: out, nodes: nodes });
+      } else if (kind === 'carraca') {
+        for (i = 0; i < 12; i++) noiseBurst(t + i * 0.028, 0.03, 0.75 * (1 - i / 18), 2000, out, nodes, true);
+      } else if (kind === 'clap') {
+        [0, 0.012, 0.026].forEach(function (d) { noiseBurst(t + d, 0.02, 0.8, 1500, out, nodes, true); });
+        noiseBurst(t + 0.04, 0.16, 0.5, 1300, out, nodes, true);
+      } else if (kind === 'tic') {
+        note({ type: 'triangle', f: 1500, f2: 900, t: t, atk: 0.002, hold: 0.03, rel: 0.05, peak: 0.8, out: out, nodes: nodes });
+      } else if (kind === 'cloche') {
+        note({ type: 'square', f: 560, t: t, atk: 0.002, hold: 0.02, rel: 0.35, peak: 0.28, out: out, nodes: nodes, filter: 2200 });
+        note({ type: 'square', f: 845, t: t, atk: 0.002, hold: 0.02, rel: 0.3, peak: 0.28, out: out, nodes: nodes, filter: 2200 });
+      } else if (kind === 'maracas') {
+        noiseBurst(t, 0.09, 0.6, 5500, out, nodes); noiseBurst(t + 0.11, 0.12, 0.7, 5500, out, nodes);
+      } else {
+        note({ type: 'sine', f: 880, t: t, atk: 0.005, hold: 0.1, rel: 0.08, peak: 0.7, out: out, nodes: nodes });
+      }
+    } catch (e) {}
+  }
+  function beatCfg(w) { var b = (w && w.beat) || {}; return { on: !!b.on, sound: b.sound || 'criquet', vol: b.vol != null ? b.vol : 0.7, every: Math.max(1, parseInt(b.every, 10) || 10) }; }
+  function beatTick(remMs) {
+    var s = run.segs[run.i];
+    if (s.type !== 'work' || !settings.sound) return;
+    var b = beatCfg(run.w); if (!b.on) return;
+    var el = s.dur * 1000 - remMs, e = Math.floor(el / 1000);
+    if (e < b.every || e >= s.dur || e % b.every !== 0 || e === run.beatLast) return;
+    run.beatLast = e;
+    if (el - e * 1000 < 1500) beatSound(b.sound, b.vol);
+  }
+  (function () {
+    var sel = $('#bt-sound');
+    BEAT_LIST.forEach(function (x) { var o = el('option', '', x[1]); o.value = x[0]; sel.appendChild(o); });
+    function cur() { if (!draft) return null; if (!draft.beat) draft.beat = { on: false, sound: 'criquet', vol: 0.7, every: 10 }; return draft.beat; }
+    window.syncBeatUI = function () {
+      var b = beatCfg(draft); $('#bt-on').checked = b.on; sel.value = b.sound; $('#bt-every').value = String(b.every); $('#bt-vol').value = String(b.vol);
+      $('#bt-opts').hidden = !b.on;
+    };
+    $('#bt-on').addEventListener('change', function () { var b = cur(); b.on = this.checked; $('#bt-opts').hidden = !this.checked; });
+    sel.addEventListener('change', function () { cur().sound = this.value; ensureAudio(); beatSound(this.value, parseFloat($('#bt-vol').value)); });
+    $('#bt-every').addEventListener('input', function () { var v = parseInt(this.value, 10); if (v >= 1) cur().every = Math.min(600, v); });
+    $('#bt-vol').addEventListener('input', function () { cur().vol = parseFloat(this.value); });
+    $('#bt-vol').addEventListener('change', function () { ensureAudio(); beatSound(sel.value, parseFloat(this.value)); });
+    $('#bt-test').addEventListener('click', function () { ensureAudio(); beatSound(sel.value, parseFloat($('#bt-vol').value)); });
+  })();
   function tone(freq, ms, delay) {
     if (!settings.sound || !actx) return;
     try {
@@ -1601,7 +1665,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function enterSeg(i, carryMs) {
     run.i = i; var s = run.segs[i];
     run.end = Date.now() + s.dur * 1000 - (carryMs || 0);
-    run.lastSec = -1; run.cueSec = 0;
+    run.lastSec = -1; run.cueSec = 0; run.beatLast = 0;
     $('#runner').dataset.phase = s.type;
     setPhase(phaseLabel(s.type));
     var meta = '';
@@ -1678,7 +1742,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       rem = run.end - Date.now();
     }
     var sec = draw(Math.max(0, rem));
-    cueTick(Math.max(0, rem));
+    cueTick(Math.max(0, rem)); beatTick(Math.max(0, rem));
     if (actx && settings.sound && actx.state !== 'running') soundHint();
     if (sec !== run.lastSec) {
       run.lastSec = sec;
