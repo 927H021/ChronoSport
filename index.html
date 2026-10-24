@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261024185938">
+<meta name="app-version" content="20261024215426">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -631,11 +631,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .cq-count { padding: 10px 16px; font-size: 13px; color: var(--muted); letter-spacing: 0; border-top: 1px solid var(--line); }
 
 /* ---- actions seconde par seconde : affichage en séance ---- */
-#r-cue { text-align: center; margin-bottom: 12px; }
+#r-cue { text-align: center; margin-bottom: 10px; height: 66px; overflow: hidden; --cue-max: 40; }
 #r-cue[hidden] { display: none; }
-#r-cue .now { font-family: var(--fd); font-size: clamp(30px, 9vw, 52px); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ph); line-height: 1.05; min-height: 1.05em; overflow-wrap: anywhere; }
-#r-cue .nxt { margin-top: 4px; min-height: 18px; font-family: var(--fd); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: rgba(235,235,245,.6); }
-@media (orientation: landscape) and (max-height: 520px) { #r-cue { margin-bottom: 6px; } #r-cue .now { font-size: clamp(22px, 8vh, 36px); } #r-cue .nxt { font-size: 12px; } }
+#r-cue .now { font-family: var(--fd); font-size: 40px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ph); line-height: 44px; height: 44px; white-space: nowrap; overflow: hidden; }
+#r-cue .nxt { margin-top: 2px; height: 20px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--fd); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: rgba(235,235,245,.6); }
+@media (orientation: landscape) and (max-height: 520px) { #r-cue { margin-bottom: 4px; height: 44px; --cue-max: 26; } #r-cue .now { font-size: 26px; line-height: 28px; height: 28px; } #r-cue .nxt { font-size: 12px; height: 16px; line-height: 16px; } }
 </style>
 
 <div class="views" id="views">
@@ -1744,14 +1744,24 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   /* Action en cours (la dernière déjà passée) et suivante, affichées sous le cadran pendant l'effort. */
   function renderCue(secIdx) {
     var box = $('#r-cue'), s = run.segs[run.i];
-    var m = s.type === 'work' ? cueMap(run.w, s.set) : null;
-    if (!m) { box.hidden = true; return; }
+    /* la zone d'action est réservée pendant toute la séance dès qu'un programme existe : la mise en page ne bouge plus */
+    var any = false, q;
+    for (q = 1; q <= (run.w.sets || 1); q++) if (cueMap(run.w, q)) { any = true; break; }
+    if (!any) { box.hidden = true; return; }
     box.hidden = false;
-    var cur = '', k;
-    for (k = secIdx; k >= 1; k--) if (m[k]) { cur = m[k]; break; }
-    var nk = nextCue(m, secIdx, s.dur);
-    $('#r-cue-now').textContent = cur;
+    var m = s.type === 'work' ? cueMap(run.w, s.set) : null;
+    var cur = '', nk = 0, k;
+    if (m) {
+      for (k = secIdx; k >= 1; k--) if (m[k]) { cur = m[k]; break; }
+      nk = nextCue(m, secIdx, s.dur);
+    }
+    var now = $('#r-cue-now');
+    now.textContent = cur;
     $('#r-cue-next').textContent = nk ? 'Ensuite : ' + m[nk] + ' · dans ' + (nk - secIdx) + ' s' : '';
+    /* le texte tient toujours sur une seule ligne : la taille s'adapte à la largeur disponible */
+    var max = parseFloat(getComputedStyle(box).getPropertyValue('--cue-max')) || 40, size = max;
+    now.style.fontSize = size + 'px';
+    while (now.scrollWidth > now.clientWidth + 1 && size > 14) { size -= 1; now.style.fontSize = size + 'px'; }
   }
   /* Quand une nouvelle seconde de l'effort commence, annonce l'action programmée (si plusieurs secondes ont été sautées, seule la dernière est lue). */
   function cueTick(remMs) {
