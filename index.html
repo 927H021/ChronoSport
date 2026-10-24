@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261024180430">
+<meta name="app-version" content="20261024181103">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -467,6 +467,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .row[hidden] { display: none; }
 #s-theme { flex: none; } #s-theme button { padding: 0 9px; font-size: 14px; letter-spacing: .04em; }
 .row .lbl { margin-right: 8px; }
+
+.wheel { position: relative; width: 120px; height: 132px; }
+.wheel-band { position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); border-radius: 8px; pointer-events: none; }
+.wheel-list { position: absolute; inset: 0; overflow-y: scroll; scroll-snap-type: y mandatory; padding: 44px 0; box-sizing: border-box; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y;
+  -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent); }
+.wheel-list::-webkit-scrollbar { display: none; }
+.wheel-list div { height: 44px; line-height: 44px; text-align: center; scroll-snap-align: center; font-family: var(--fd); font-size: 24px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.bt-wheelrow { align-items: center; }
 /* ---- compact timer layout ---- */
 #v-dial .dial, .dial { width: min(100%, 400px, 52vh); }
 .dial-title { min-height: 36px; }
@@ -731,7 +739,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><label for="bt-on">Son régulier<small>Un son à intervalle fixe pendant chaque effort (se mélange à la musique)</small></label><span class="switch"><input type="checkbox" id="bt-on"><i></i></span></div>
       <div id="bt-opts">
       <div class="row"><label for="bt-sound">Son</label><select id="bt-sound"></select></div>
-      <div class="row"><label for="bt-every">Toutes les (secondes)</label><input type="number" id="bt-every" inputmode="numeric" min="1" max="600" step="1" style="width:84px;text-align:right"></div>
+      <div class="row bt-wheelrow"><label id="bt-every-l">Toutes les (secondes)</label><div class="wheel" id="bt-every" role="spinbutton" aria-labelledby="bt-every-l" tabindex="0"><div class="wheel-band"></div><div class="wheel-list" id="bt-wlist"></div></div></div>
       <div class="row"><label for="bt-vol">Volume</label><input type="range" id="bt-vol" min="0.1" max="1" step="0.05"></div>
       <div class="row"><span class="lbl">Écouter</span><button class="btn ghost" type="button" id="bt-test">Tester</button></div>
       </div>
@@ -1535,7 +1543,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     return nodes;
   }
   /* ---------- son répété (par minuteur) ---------- */
-  var BEAT_LIST = [['criquet', 'Criquet'], ['carraca', 'Carraca (crécelle)'], ['clap', 'Claquement de mains'], ['tic', 'Métronome'], ['cloche', 'Cloche de vache'], ['maracas', 'Maracas'], ['bip', 'Bip']];
+  var BEAT_LIST = [['criquet', 'Criquet'], ['carraca', 'Carraca (crécelle)'], ['tic', 'Métronome'], ['cloche', 'Cloche de vache'], ['clochette', 'Clochette'], ['maracas', 'Maracas'], ['bip', 'Bip']];
   function beatSound(kind, vol) {
     if (!actx) return;
     try {
@@ -1546,14 +1554,16 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
         for (i = 0; i < 4; i++) note({ type: 'sine', f: 4300, t: t + 0.32 + i * 0.055, atk: 0.004, hold: 0.02, rel: 0.025, peak: 0.45, out: out, nodes: nodes });
       } else if (kind === 'carraca') {
         for (i = 0; i < 12; i++) noiseBurst(t + i * 0.028, 0.03, 0.75 * (1 - i / 18), 2000, out, nodes, true);
-      } else if (kind === 'clap') {
-        [0, 0.012, 0.026].forEach(function (d) { noiseBurst(t + d, 0.02, 0.8, 1500, out, nodes, true); });
-        noiseBurst(t + 0.04, 0.16, 0.5, 1300, out, nodes, true);
       } else if (kind === 'tic') {
         note({ type: 'triangle', f: 1500, f2: 900, t: t, atk: 0.002, hold: 0.03, rel: 0.05, peak: 0.8, out: out, nodes: nodes });
       } else if (kind === 'cloche') {
         note({ type: 'square', f: 560, t: t, atk: 0.002, hold: 0.02, rel: 0.35, peak: 0.28, out: out, nodes: nodes, filter: 2200 });
         note({ type: 'square', f: 845, t: t, atk: 0.002, hold: 0.02, rel: 0.3, peak: 0.28, out: out, nodes: nodes, filter: 2200 });
+      } else if (kind === 'clochette') {
+        [[2637, 0.5, 1.0], [3951, 0.28, 0.7], [5300, 0.16, 0.45], [7040, 0.08, 0.3]].forEach(function (p) {
+          note({ type: 'sine', f: p[0], t: t, atk: 0.002, hold: 0.01, rel: p[2], peak: p[1], out: out, nodes: nodes });
+        });
+        note({ type: 'sine', f: 2650, t: t + 0.16, atk: 0.002, hold: 0.01, rel: 0.7, peak: 0.3, out: out, nodes: nodes });
       } else if (kind === 'maracas') {
         noiseBurst(t, 0.09, 0.6, 5500, out, nodes); noiseBurst(t + 0.11, 0.12, 0.7, 5500, out, nodes);
       } else {
@@ -1561,7 +1571,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       }
     } catch (e) {}
   }
-  function beatCfg(w) { var b = (w && w.beat) || {}; return { on: !!b.on, sound: b.sound || 'criquet', vol: b.vol != null ? b.vol : 0.7, every: Math.max(1, parseInt(b.every, 10) || 10) }; }
+  function beatCfg(w) { var b = (w && w.beat) || {}; return { on: !!b.on, sound: (BEAT_LIST.some(function (x) { return x[0] === b.sound; }) ? b.sound : 'criquet'), vol: b.vol != null ? b.vol : 0.7, every: Math.max(1, parseInt(b.every, 10) || 10) }; }
   function beatTick(remMs) {
     var s = run.segs[run.i];
     if (s.type !== 'work' || !settings.sound) return;
@@ -1576,12 +1586,29 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     BEAT_LIST.forEach(function (x) { var o = el('option', '', x[1]); o.value = x[0]; sel.appendChild(o); });
     function cur() { if (!draft) return null; if (!draft.beat) draft.beat = { on: false, sound: 'criquet', vol: 0.7, every: 10 }; return draft.beat; }
     window.syncBeatUI = function () {
-      var b = beatCfg(draft); $('#bt-on').checked = b.on; sel.value = b.sound; $('#bt-every').value = String(b.every); $('#bt-vol').value = String(b.vol);
+      var b = beatCfg(draft); $('#bt-on').checked = b.on; sel.value = b.sound; $('#bt-vol').value = String(b.vol);
       $('#bt-opts').hidden = !b.on;
+      wheelSet(b.every);
     };
-    $('#bt-on').addEventListener('change', function () { var b = cur(); b.on = this.checked; $('#bt-opts').hidden = !this.checked; });
+    var WV = [], wl = $('#bt-wlist'), wt = 0, H = 44;
+    for (var q = 1; q <= 300; q++) WV.push(q);
+    WV.forEach(function (v) { var d = document.createElement('div'); d.textContent = v; wl.appendChild(d); });
+    function wheelSet(v) { var i = Math.max(0, Math.min(WV.length - 1, v - 1)); var go = function () { wl.scrollTop = i * H; }; go(); setTimeout(go, 30); setTimeout(go, 200); }
+    wl.addEventListener('scroll', function () {
+      clearTimeout(wt);
+      wt = setTimeout(function () {
+        var i = Math.max(0, Math.min(WV.length - 1, Math.round(wl.scrollTop / H)));
+        if (cur()) cur().every = WV[i];
+        $('#bt-every').setAttribute('aria-valuenow', WV[i]);
+        wl.dispatchEvent(new Event('change', { bubbles: true }));
+      }, 90);
+    }, { passive: true });
+    $('#bt-every').addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return; e.preventDefault();
+      wl.scrollTop += (e.key === 'ArrowUp' ? -H : H);
+    });
+    $('#bt-on').addEventListener('change', function () { var b = cur(); b.on = this.checked; $('#bt-opts').hidden = !this.checked; if (this.checked) wheelSet(beatCfg(draft).every); });
     sel.addEventListener('change', function () { cur().sound = this.value; ensureAudio(); beatSound(this.value, parseFloat($('#bt-vol').value)); });
-    $('#bt-every').addEventListener('input', function () { var v = parseInt(this.value, 10); if (v >= 1) cur().every = Math.min(600, v); });
     $('#bt-vol').addEventListener('input', function () { cur().vol = parseFloat(this.value); });
     $('#bt-vol').addEventListener('change', function () { ensureAudio(); beatSound(sel.value, parseFloat(this.value)); });
     $('#bt-test').addEventListener('click', function () { ensureAudio(); beatSound(sel.value, parseFloat($('#bt-vol').value)); });
