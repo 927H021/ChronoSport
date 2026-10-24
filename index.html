@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261024182244">
+<meta name="app-version" content="20261024182729">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1589,6 +1589,19 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       }
     } catch (e) {}
   }
+  /* cliquet d'horlogerie : petit « tic » mécanique à chaque cran de la molette */
+  var lastClick = 0;
+  function wheelClick() {
+    if (!settings.sound || !actx) return;
+    var n = Date.now(); if (n - lastClick < 22) return; lastClick = n;
+    try {
+      var out = actx.createGain(); out.gain.value = 0.55; out.connect(masterOut());
+      var t = actx.currentTime + 0.005, nodes = [];
+      noiseBurst(t, 0.012, 0.9, 3800, out, nodes, true);
+      note({ type: 'triangle', f: 2600, f2: 1900, t: t, atk: 0.001, hold: 0.006, rel: 0.018, peak: 0.35, out: out, nodes: nodes });
+      note({ type: 'sine', f: 950, t: t + 0.004, atk: 0.001, hold: 0.004, rel: 0.03, peak: 0.12, out: out, nodes: nodes });
+    } catch (e) {}
+  }
   function beatCfg(w) { var b = (w && w.beat) || {}; return { on: !!b.on, sound: (BEAT_LIST.some(function (x) { return x[0] === b.sound; }) ? b.sound : 'criquet'), vol: b.vol != null ? b.vol : 0.7, every: Math.max(1, parseInt(b.every, 10) || 10) }; }
   function beatTick(remMs) {
     var s = run.segs[run.i];
@@ -1611,9 +1624,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var WV = [], wl = $('#bt-wlist'), wt = 0, H = 44;
     for (var q = 1; q <= 300; q++) WV.push(q);
     WV.forEach(function (v) { var d = document.createElement('div'); d.textContent = v; wl.appendChild(d); });
-    function wheelSet(v) { var i = Math.max(0, Math.min(WV.length - 1, v - 1)); var go = function () { wl.scrollTop = i * H; }; go(); mark(); setTimeout(function () { go(); mark(); }, 30); setTimeout(function () { go(); mark(); }, 200); }
-    var hl = -1;
-    function mark() { var i = Math.max(0, Math.min(WV.length - 1, Math.round(wl.scrollTop / H))); if (i !== hl) { if (wl.children[hl]) wl.children[hl].classList.remove('on'); hl = i; wl.children[i].classList.add('on'); } }
+    function wheelSet(v) { quiet = true; clearTimeout(qt); qt = setTimeout(function () { quiet = false; }, 450); var i = Math.max(0, Math.min(WV.length - 1, v - 1)); var go = function () { wl.scrollTop = i * H; }; go(); mark(); setTimeout(function () { go(); mark(); }, 30); setTimeout(function () { go(); mark(); }, 200); }
+    var hl = -1, quiet = false, qt = 0;
+    function mark() { var i = Math.max(0, Math.min(WV.length - 1, Math.round(wl.scrollTop / H))); if (i !== hl) { if (wl.children[hl]) wl.children[hl].classList.remove('on'); var first = hl < 0; hl = i; wl.children[i].classList.add('on'); if (!first && !quiet) wheelClick(); } }
     wl.addEventListener('scroll', function () {
       mark(); clearTimeout(wt);
       wt = setTimeout(function () {
