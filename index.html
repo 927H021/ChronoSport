@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261024181826">
+<meta name="app-version" content="20261024182244">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -755,6 +755,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     </div>
     <div id="cq-section">
     <div class="section-title">Actions seconde par seconde</div>
+    <div class="group" id="cq-toggle"><div class="row"><label for="cq-on">Activer les actions<small>Affiche le tableau et annonce les actions pendant l'effort</small></label><span class="switch"><input type="checkbox" id="cq-on"><i></i></span></div></div>
     <div class="group" id="cq">
       <div class="row" id="cq-same-row"><label for="cq-same">Même programme à chaque série<small>Désactivez pour écrire un programme différent par série</small></label><span class="switch"><input type="checkbox" id="cq-same"><i></i></span></div>
       <div class="cq-sticky" id="cq-sticky">
@@ -913,7 +914,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
      w.cuesSame : (défaut vrai) la série 1 sert de programme à toutes les séries et à tous les cycles. */
   function cuesShared(w) { return w.cuesSame !== false || !(w.sets > 1); }
   function cueMap(w, set) {
-    if (settings.quickOn === false || !w.cues || !w.cues.length) return null;
+    if (settings.quickOn === false || w.cuesOn === false || !w.cues || !w.cues.length) return null;
     var m = cuesShared(w) ? w.cues[0] : w.cues[set - 1];
     return m && Object.keys(m).length ? m : null;
   }
@@ -954,7 +955,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var core = w.sets + ' × ' + fmt(w.work);
     if (w.rest > 0) core += ' / ' + fmt(w.rest);
     if (w.cycles > 1) core = w.cycles + ' cycles · ' + core;
-    var nc = settings.quickOn === false ? 0 : cueTotal(w);   /* « N actions » n'apparaît que si Actions rapides est activé */
+    var nc = (settings.quickOn === false || w.cuesOn === false) ? 0 : cueTotal(w);   /* « N actions » n'apparaît que si Actions rapides est activé */
     if (nc) core +=' · ' + nc + (nc > 1 ? ' actions' : ' action');
     return core;
   }
@@ -1202,6 +1203,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   $('#cq-b-clear').addEventListener('click', cqClearBlock);
   $('#cq-b-ins').addEventListener('click', cqInsert);
   $('#cq-b-del').addEventListener('click', cqRemove);
+  /* interrupteur par minuteur : affiche ou masque le menu « Actions seconde par seconde » */
+  function cqToggleSync() {
+    var on = draft.cuesOn != null ? !!draft.cuesOn : cueTotal(draft) > 0;
+    $('#cq-on').checked = on;
+    var sec = $('#cq-section'), tg = $('#cq-toggle'), tt = sec.querySelector('.section-title');
+    Array.prototype.forEach.call(sec.children, function (c) { if (c !== tt && c !== tg) c.hidden = !on; });
+    if (on) { cqKey = ''; syncCues(true); }
+  }
+  $('#cq-on').addEventListener('change', function () { draft.cuesOn = this.checked; cqToggleSync(); });
   /* boutons rapides : lus dans les réglages (settings.quick) */
   function buildQuick() {
     var sg = $('#cq-sugg'); sg.textContent = '';
@@ -1343,7 +1353,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#ed-name').value = draft.name;
     $('#ed-delete').hidden = !isEdit; $('#ed-dup').hidden = !isEdit;
     deleteArmed = false; $('#ed-delete').textContent = 'Supprimer';
-    buildEditorFields(); refreshEditor(); if (window.syncBeatUI) window.syncBeatUI();
+    buildEditorFields(); refreshEditor(); if (window.syncBeatUI) window.syncBeatUI(); cqToggleSync();
     $('#editor').hidden = false;
     $('.ed-body').scrollTop = 0;
     fitEditor();
