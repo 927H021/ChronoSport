@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261024182729">
+<meta name="app-version" content="20261024183015">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -468,20 +468,20 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 #s-theme { flex: none; } #s-theme button { padding: 0 9px; font-size: 14px; letter-spacing: .04em; }
 .row .lbl { margin-right: 8px; }
 
-.wheel { position: relative; width: 136px; height: 128px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); overflow: hidden;
+.wheel { position: relative; width: 92px; height: 84px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); overflow: hidden;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), inset 0 8px 14px -8px rgba(0,0,0,.7), inset 0 -8px 14px -8px rgba(0,0,0,.7); }
 /* repères horlogers : fine ligne orange de lecture et index triangulaires de chaque côté */
-.wheel-band { position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); pointer-events: none; z-index: 2;
+.wheel-band { position: absolute; left: 0; right: 0; top: 50%; height: 28px; transform: translateY(-50%); pointer-events: none; z-index: 2;
   border-top: 1px solid var(--accent); border-bottom: 1px solid var(--accent); background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 9%, transparent) 50%, transparent); }
-.wheel-band::before, .wheel-band::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; margin-top: -5px; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
-.wheel-band::before { left: 0; border-left: 7px solid var(--accent); }
-.wheel-band::after { right: 0; border-right: 7px solid var(--accent); }
-.wheel-list { position: absolute; inset: 0; overflow-y: scroll; scroll-snap-type: y mandatory; padding: 42px 0; box-sizing: border-box; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; z-index: 1;
+.wheel-band::before, .wheel-band::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; margin-top: -4px; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+.wheel-band::before { left: 0; border-left: 5px solid var(--accent); }
+.wheel-band::after { right: 0; border-right: 5px solid var(--accent); }
+.wheel-list { position: absolute; inset: 0; overflow-y: scroll; scroll-snap-type: y mandatory; padding: 28px 0; box-sizing: border-box; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; z-index: 1;
   -webkit-mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); }
 .wheel-list::-webkit-scrollbar { display: none; }
-.wheel-list div { height: 44px; line-height: 44px; text-align: center; scroll-snap-align: center; font-family: var(--fd); font-size: 22px; font-weight: 500; letter-spacing: .04em; color: var(--muted); font-variant-numeric: tabular-nums; transition: color .12s, font-size .12s; }
-.wheel-list div.on { color: var(--accent); font-size: 32px; font-weight: 700; }
-.wheel::after { content: 's'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); z-index: 3; font-family: var(--fd); font-size: 13px; letter-spacing: .1em; color: var(--muted); pointer-events: none; text-transform: uppercase; }
+.wheel-list div { height: 28px; line-height: 28px; text-align: center; scroll-snap-align: center; font-family: var(--fd); font-size: 16px; font-weight: 500; letter-spacing: .04em; color: var(--muted); font-variant-numeric: tabular-nums; transition: color .12s, font-size .12s; }
+.wheel-list div.on { color: var(--accent); font-size: 22px; font-weight: 700; }
+.wheel::after { content: 's'; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); z-index: 3; font-family: var(--fd); font-size: 11px; letter-spacing: .1em; color: var(--muted); pointer-events: none; text-transform: uppercase; }
 .bt-wheelrow { align-items: center; }
 /* ---- compact timer layout ---- */
 #v-dial .dial, .dial { width: min(100%, 400px, 52vh); }
@@ -1621,7 +1621,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       $('#bt-opts').hidden = !b.on;
       wheelSet(b.every);
     };
-    var WV = [], wl = $('#bt-wlist'), wt = 0, H = 44;
+    var WV = [], wl = $('#bt-wlist'), wt = 0, H = 28;
     for (var q = 1; q <= 300; q++) WV.push(q);
     WV.forEach(function (v) { var d = document.createElement('div'); d.textContent = v; wl.appendChild(d); });
     function wheelSet(v) { quiet = true; clearTimeout(qt); qt = setTimeout(function () { quiet = false; }, 450); var i = Math.max(0, Math.min(WV.length - 1, v - 1)); var go = function () { wl.scrollTop = i * H; }; go(); mark(); setTimeout(function () { go(); mark(); }, 30); setTimeout(function () { go(); mark(); }, 200); }
