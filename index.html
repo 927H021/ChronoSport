@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261025102455">
+<meta name="app-version" content="20261025104853">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -631,6 +631,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .cq-count { padding: 10px 16px; font-size: 13px; color: var(--muted); letter-spacing: 0; border-top: 1px solid var(--line); }
 
 /* ---- actions seconde par seconde : affichage en séance ---- */
+@media (orientation: portrait) { #runner.has-cue .ring { width: min(78vw, 36vh, 330px); margin: 6px; } #runner.has-cue #r-count { font-size: clamp(54px, 18vw, 92px); } #runner.has-cue .r-center { gap: 8px; } #runner.has-cue .r-sub { transform: scale(.88); transform-origin: center top; margin-bottom: -12px; } }
 #r-cue { text-align: center; margin-bottom: 10px; height: 66px; overflow: hidden; --cue-max: 40; }
 #r-cue[hidden] { display: none; }
 #r-cue .now { font-family: var(--fd); font-size: 40px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ph); line-height: 44px; height: 44px; white-space: nowrap; overflow: hidden; }
@@ -1752,6 +1753,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     /* la zone d'action est réservée pendant toute la séance dès qu'un programme existe : la mise en page ne bouge plus */
     var any = false, q;
     for (q = 1; q <= (run.w.sets || 1); q++) if (cueMap(run.w, q)) { any = true; break; }
+    $('#runner').classList.toggle('has-cue', any);
     if (!any) { box.hidden = true; return; }
     box.hidden = false;
     var m = s.type === 'work' ? cueMap(run.w, s.set) : null;
@@ -1818,7 +1820,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     }
     var sec = draw(Math.max(0, rem));
     cueTick(Math.max(0, rem)); beatTick(Math.max(0, rem));
-    if (actx && settings.sound && actx.state !== 'running') soundHint();
+    if (actx && settings.sound && actx.state !== 'running') {
+      var nowT = Date.now();
+      if (!run.deadSince) run.deadSince = nowT;
+      if (nowT - (run.lastResume || 0) > 1500) { run.lastResume = nowT; try { var rp = actx.resume(); if (rp && rp.catch) rp.catch(function () {}); } catch (e) {} }
+      if (nowT - run.deadSince > 8000) soundHint();
+    } else if (run) run.deadSince = 0;
     if (sec !== run.lastSec) {
       run.lastSec = sec;
       var cb = settings.countdown;
@@ -1837,7 +1844,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#r-count').textContent = '0:00'; ring.style.strokeDashoffset = String(C);
     drawSub(0);
     $('#r-bar').style.width = '100%';
-    $('#r-cue').hidden = true;
+    $('#r-cue').hidden = true; $('#runner').classList.remove('has-cue');
     alertSound('end'); vibrate([300, 100, 300, 100, 500]);
     speak(tr('Séance terminée', 'Workout complete'));
     logSession(true, run.totalDur);
