@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261025105330">
+<meta name="app-version" content="20261025105748">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -21,22 +21,45 @@
 /* Mise à jour automatique : compare la version publiée à celle de la page ouverte. */
 (function () {
   var cur = (document.querySelector('meta[name="app-version"]') || {}).content;
-  var busy = false;
+  var busy = false, pending = '';
+  function isBusy() {
+    var ed = document.getElementById('editor');
+    return (ed && !ed.hidden) || !!document.querySelector('#runner:not([hidden])');
+  }
+  function reloadTo(v) { location.replace(location.pathname + '?v=' + v + '&t=' + Date.now()); }
+  function banner(v) {
+    if (document.getElementById('upd-bar')) return;
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'upd-bar';
+    b.textContent = 'Nouvelle version disponible · Touchez pour mettre à jour';
+    b.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:99999;padding:14px;border-radius:12px;border:1px solid #ff6a1a;background:#14161a;color:#ff6a1a;font:600 15px/1.2 system-ui,sans-serif;letter-spacing:.02em';
+    b.addEventListener('click', function () { reloadTo(v); });
+    (document.body || document.documentElement).appendChild(b);
+  }
   function check() {
     if (busy || !cur || !/^https?:/.test(location.protocol)) return; busy = true;
     fetch(location.pathname + '?nocache=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
       var m = t.match(/<meta name="app-version" content="([^"]+)"/);
       if (m && m[1] !== cur) {
-        /* ne jamais recharger pendant une modification ou une séance : on attend le prochain retour dans l'app */
-        var ed = document.getElementById('editor'), busyUi = (ed && !ed.hidden) || document.querySelector('#runner:not([hidden])');
-        if (!busyUi) location.replace(location.pathname + '?v=' + m[1]);
+        pending = m[1];
+        /* jamais de rechargement pendant une modification ou une séance : on propose un bouton à la place */
+        if (isBusy()) banner(pending); else reloadTo(pending);
       }
       busy = false;
     }).catch(function () { busy = false; });
   }
-  if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); }); }
+  /* mise à jour forcée (Réglages) : supprime le cache hors connexion et le service worker, puis recharge */
+  window.__chronoHardUpdate = function () {
+    var jobs = [];
+    try { if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })); } catch (e) {}
+    try { if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })); } catch (e) {}
+    Promise.all(jobs).catch(function () {}).then(function () { location.replace(location.pathname + '?v=' + Date.now()); });
+  };
+  window.__chronoVersion = cur;
+  if ('serviceWorker' in navigator && /^https?:/.test(location.protocol)) { window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').then(function (r) { try { r.update(); } catch (e) {} }).catch(function () {}); }); }
   check();
   document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+  window.addEventListener('pageshow', check);
+  setInterval(function () { if (!document.hidden) check(); }, 60000);
 })();
 </script>
 <title>ChronoSport</title>
@@ -697,6 +720,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><span class="lbl">Vider l'historique</span><button class="btn danger" type="button" id="s-clear-hist">Vider</button></div>
       <div class="row"><span class="lbl">Sauvegarde de vos minuteurs et réglages</span><span style="display:flex;gap:6px"><button class="btn ghost" type="button" id="s-export">Exporter</button><button class="btn ghost" type="button" id="s-import">Importer</button></span></div>
       <input type="file" id="s-import-file" accept=".json,application/json" hidden>
+      <div class="row"><span class="lbl">Version de l'application<small id="s-version"></small></span><button class="btn ghost" type="button" id="s-update">Mettre à jour</button></div>
       <div class="row" id="s-store-warn" hidden><span class="lbl" style="color:var(--accent)">Le stockage de cet appareil est indisponible : vos modifications ne seront pas conservées. Ouvrez ChronoSport depuis l'icône installée ou son adresse web.</span></div>
       <div class="row"><span class="lbl">Rétablir les minuteurs d'origine</span><button class="btn danger" type="button" id="s-reset">Rétablir</button></div>
     </div>
@@ -1974,6 +1998,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     });
   }
   armed($('#s-clear-hist'), function () { history = []; save('tempo.history', history); renderHistory(); toast('Historique vidé'); });
+  /* version affichée + mise à jour forcée */
+  (function () {
+    var v = String(window.__chronoVersion || '');
+    $('#s-version').textContent = v ? ('n° ' + v.slice(6, 8) + '/' + v.slice(4, 6) + ' ' + v.slice(8, 10) + ':' + v.slice(10, 12)) : 'hors ligne';
+    $('#s-update').addEventListener('click', function () { if (window.__chronoHardUpdate) { toast('Mise à jour…'); window.__chronoHardUpdate(); } else location.reload(); });
+  })();
   /* stockage durable + sauvegarde manuelle */
   (function () {
     var ok = true;
