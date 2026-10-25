@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261025104853">
+<meta name="app-version" content="20261025105330">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1404,7 +1404,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function ensureAudio() {
     try {
       if (actx && actx.state === 'closed') { actx = null; master = null; }
-      if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (AC) { actx = new AC(); master = null; } }
+      setMixSession();   /* le type de session doit être posé AVANT la création du moteur audio, sinon iOS coupe la musique */
+      if (!actx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) {
+          actx = new AC(); master = null;
+          try { actx.addEventListener('statechange', setMixSession); } catch (e4) {}
+        }
+      }
       setMixSession();
       if (actx && actx.state !== 'running') {
         var pr = actx.resume(); if (pr && pr.catch) pr.catch(function () {});
@@ -2458,7 +2465,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   /* Le moteur audio n'est ouvert que lorsqu'un minuteur tourne : ouvrir l'app ou la toucher ne doit jamais interrompre la musique (iOS). */
   function audioWanted() { return (run && !run.finished) || dial.state === 'running' || sw.state === 'running'; }
-  function lazyAudio() { if (audioWanted()) ensureAudio(); }
+  function lazyAudio() { setMixSession(); if (audioWanted()) ensureAudio(); }
   ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, lazyAudio, true); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { lazyAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
 
