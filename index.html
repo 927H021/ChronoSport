@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261025101710">
+<meta name="app-version" content="20261025102156">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -864,6 +864,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   var settings = Object.assign({}, DEFAULTS, load('tempo.settings', {}));
   /* l'option s'appelle désormais « Équilibrer voix et musique », activée par défaut (mix = false) */
   if (settings.mixV !== 2) { settings.mix = false; settings.mixV = 2; save('tempo.settings', settings); }
+  /* iOS : l'option « Équilibrer voix et musique » n'a aucun effet (le système décide) : elle est masquée et les sons se mélangent à la musique */
+  var IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (IS_IOS) settings.mix = true;
   /* boutons d'actions rapides de l'éditeur, modifiables dans les réglages */
   if (!Array.isArray(settings.quick)) settings.quick = QUICK_DEFAULT.slice();
   /* les actions rapides actuelles deviennent celles « d'origine » (utilisées par Rétablir) */
@@ -1921,7 +1924,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function syncSettings() {
     $('#s-sound').checked = settings.sound; $('#s-volume').value = settings.volume;
     $('#s-count').value = String(settings.countdown); $('#s-voice').checked = settings.voice; $('#s-alert').value = settings.alert;
-    $('#s-vib').checked = settings.vibrate; $('#s-mix').checked = settings.mix === false; $('#s-wake').checked = settings.wake;
+    $('#s-vib').checked = settings.vibrate; $('#s-mix').checked = settings.mix === false; $('#s-mix').closest('.row').hidden = IS_IOS; $('#s-wake').checked = settings.wake;
     $('#s-voice-en').checked = !!settings.voiceEn; $('#s-voice-en-row').hidden = !settings.voice;
     $('#s-quick-on').checked = settings.quickOn !== false; $('#s-quick-wrap').hidden = settings.quickOn === false;
     $$('#s-theme button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === settings.theme ? 'true' : 'false'); });
