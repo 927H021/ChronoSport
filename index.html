@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261025105748">
+<meta name="app-version" content="20261025114040">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -720,7 +720,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><span class="lbl">Vider l'historique</span><button class="btn danger" type="button" id="s-clear-hist">Vider</button></div>
       <div class="row"><span class="lbl">Sauvegarde de vos minuteurs et réglages</span><span style="display:flex;gap:6px"><button class="btn ghost" type="button" id="s-export">Exporter</button><button class="btn ghost" type="button" id="s-import">Importer</button></span></div>
       <input type="file" id="s-import-file" accept=".json,application/json" hidden>
-      <div class="row"><span class="lbl">Version de l'application<small id="s-version"></small></span><button class="btn ghost" type="button" id="s-update">Mettre à jour</button></div>
+      <div class="row"><span class="lbl">Version de l'application<small id="s-version"></small><small id="s-diag"></small></span><button class="btn ghost" type="button" id="s-update">Mettre à jour</button></div>
       <div class="row" id="s-store-warn" hidden><span class="lbl" style="color:var(--accent)">Le stockage de cet appareil est indisponible : vos modifications ne seront pas conservées. Ouvrez ChronoSport depuis l'icône installée ou son adresse web.</span></div>
       <div class="row"><span class="lbl">Rétablir les minuteurs d'origine</span><button class="btn danger" type="button" id="s-reset">Rétablir</button></div>
     </div>
@@ -1422,7 +1422,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
   /* ---------- audio / feedback ---------- */
   /* Mixage : à déclarer dès le chargement, avant tout son, pour ne pas interrompre la musique. */
-  function setMixSession() { try { if (navigator.audioSession) navigator.audioSession.type = (settings.mix !== false) ? 'ambient' : 'playback'; } catch (e) {} }
+  function setMixSession() { try { var want = (settings.mix !== false) ? 'ambient' : 'playback'; if (navigator.audioSession && navigator.audioSession.type !== want) navigator.audioSession.type = want; } catch (e) {} }
   setMixSession();
   var actx = null;
   function ensureAudio() {
@@ -1433,7 +1433,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
         var AC = window.AudioContext || window.webkitAudioContext;
         if (AC) {
           actx = new AC(); master = null;
-          try { actx.addEventListener('statechange', setMixSession); } catch (e4) {}
         }
       }
       setMixSession();
@@ -2002,6 +2001,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   (function () {
     var v = String(window.__chronoVersion || '');
     $('#s-version').textContent = v ? ('n° ' + v.slice(6, 8) + '/' + v.slice(4, 6) + ' ' + v.slice(8, 10) + ':' + v.slice(10, 12)) : 'hors ligne';
+    window.refreshDiag = function () {
+      var t = ''; try { t = 'Audio : session ' + (navigator.audioSession ? navigator.audioSession.type : 'non prise en charge') + ' · moteur ' + (actx ? actx.state : 'fermé'); } catch (e) {}
+      $('#s-diag').textContent = t;
+    };
+    window.refreshDiag(); setInterval(window.refreshDiag, 2000);
     $('#s-update').addEventListener('click', function () { if (window.__chronoHardUpdate) { toast('Mise à jour…'); window.__chronoHardUpdate(); } else location.reload(); });
   })();
   /* stockage durable + sauvegarde manuelle */
@@ -2495,7 +2499,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   /* Le moteur audio n'est ouvert que lorsqu'un minuteur tourne : ouvrir l'app ou la toucher ne doit jamais interrompre la musique (iOS). */
   function audioWanted() { return (run && !run.finished) || dial.state === 'running' || sw.state === 'running'; }
-  function lazyAudio() { setMixSession(); if (audioWanted()) ensureAudio(); }
+  function lazyAudio() { if (audioWanted()) ensureAudio(); }
   ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, lazyAudio, true); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { lazyAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
 
