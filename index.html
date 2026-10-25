@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261024215426">
+<meta name="app-version" content="20261025101710">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -667,7 +667,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
         <select id="s-count"><option value="0">Aucun</option><option value="3">3 dernières s</option><option value="5">5 dernières s</option><option value="10">10 dernières s</option></select></div>
       <div class="row"><label for="s-voice">Annonce vocale<small>Lit à voix haute la phase, le minuteur et les actions programmées</small></label><span class="switch"><input type="checkbox" id="s-voice"><i></i></span></div>
       <div class="row" id="s-voice-en-row" hidden><label for="s-voice-en">Voix anglaise<small>Annonces en anglais américain (en-US)</small></label><span class="switch"><input type="checkbox" id="s-voice-en"><i></i></span></div>
-      <div class="row"><label for="s-mix">Laisser jouer la musique<small>Ne coupe pas votre application musicale. Désactivé : l'app reste active écran verrouillé mais peut interrompre la musique</small></label><span class="switch"><input type="checkbox" id="s-mix"><i></i></span></div>
+      <div class="row"><label for="s-mix">Équilibrer voix et musique<small>Activé : la voix reste audible par-dessus votre musique (Android). Désactivé : la musique n'est pas touchée mais la voix peut être faible</small></label><span class="switch"><input type="checkbox" id="s-mix"><i></i></span></div>
       <div class="row"><label for="s-vib">Vibration<small>Selon l'appareil</small></label><span class="switch"><input type="checkbox" id="s-vib"><i></i></span></div>
       <div class="row"><label for="s-alert">Son d'alerte<small>Début d'effort, fin de série et de séance</small></label>
         <select id="s-alert"></select></div>
@@ -862,6 +862,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   var QUICK_DEFAULT = ['Jab', 'Direct', 'Crochet', 'Uppercut', 'Esquive', 'Garde', 'Double jab', 'Jab / direct', 'Jab / crochet'];
   var settings = Object.assign({}, DEFAULTS, load('tempo.settings', {}));
+  /* l'option s'appelle désormais « Équilibrer voix et musique », activée par défaut (mix = false) */
+  if (settings.mixV !== 2) { settings.mix = false; settings.mixV = 2; save('tempo.settings', settings); }
   /* boutons d'actions rapides de l'éditeur, modifiables dans les réglages */
   if (!Array.isArray(settings.quick)) settings.quick = QUICK_DEFAULT.slice();
   /* les actions rapides actuelles deviennent celles « d'origine » (utilisées par Rétablir) */
@@ -1919,7 +1921,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function syncSettings() {
     $('#s-sound').checked = settings.sound; $('#s-volume').value = settings.volume;
     $('#s-count').value = String(settings.countdown); $('#s-voice').checked = settings.voice; $('#s-alert').value = settings.alert;
-    $('#s-vib').checked = settings.vibrate; $('#s-mix').checked = settings.mix !== false; $('#s-wake').checked = settings.wake;
+    $('#s-vib').checked = settings.vibrate; $('#s-mix').checked = settings.mix === false; $('#s-wake').checked = settings.wake;
     $('#s-voice-en').checked = !!settings.voiceEn; $('#s-voice-en-row').hidden = !settings.voice;
     $('#s-quick-on').checked = settings.quickOn !== false; $('#s-quick-wrap').hidden = settings.quickOn === false;
     $$('#s-theme button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === settings.theme ? 'true' : 'false'); });
@@ -1939,7 +1941,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     SOUND_LIST.forEach(function (x) { var o = el('option', '', x[1]); o.value = x[0]; sel.appendChild(o); });
     sel.addEventListener('change', function () { settings.alert = sel.value; save('tempo.settings', settings); ensureAudio(); alertSound('setEnd'); vibrate([100]); });
   })();
-  bindSetting('#s-mix', 'mix', function (e) { return e.checked; });
+  bindSetting('#s-mix', 'mix', function (e) { return !e.checked; });
   $('#s-mix').addEventListener('input', setMixSession);
   bindSetting('#s-vib', 'vibrate', function (e) { return e.checked; });
   bindSetting('#s-wake', 'wake', function (e) { return e.checked; });
