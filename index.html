@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261025120535">
+<meta name="app-version" content="20261025162422">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1700,7 +1700,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   /* ---------- iOS : sons joués par de simples lecteurs audio ----------
      Sur iPhone, ouvrir le moteur audio (AudioContext) interrompt la musique. Les sons sont donc fabriqués en mémoire
      (calcul hors ligne, rien n'est joué) puis lus par des lecteurs audio, qui se mélangent à la musique. */
-  var SOFT = IS_IOS || /[?&]soft=1/.test(location.search);
+  /* désactivé par défaut (la cause de la coupure était la voix premium d'iOS) ; réactivable avec ?soft=1 dans l'adresse */
+  var SOFT = /[?&]soft=1/.test(location.search);
   var SR = 32000, pool = [], poolI = 0, softCache = {}, SIL_URL = '';
   function wavUrl(buf) {
     var d = buf.getChannelData(0), n = d.length, b = new ArrayBuffer(44 + n * 2), v = new DataView(b), i;
