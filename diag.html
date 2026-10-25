@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Test audio ChronoSport</title>
+<style>
+body{margin:0;padding:16px;background:#0a0b0d;color:#eee;font:16px/1.4 -apple-system,system-ui,sans-serif}
+h1{font-size:20px;margin:0 0 6px}p{color:#9aa;margin:6px 0 14px;font-size:14px}
+button{display:block;width:100%;margin:8px 0;padding:14px;border-radius:12px;border:1px solid #ff6a1a;background:#14161a;color:#ff6a1a;font:600 16px system-ui;text-align:left}
+button small{display:block;color:#889;font-weight:400;font-size:12px;margin-top:2px}
+#log{margin-top:14px;padding:10px;background:#14161a;border-radius:10px;font:12px/1.5 ui-monospace,monospace;white-space:pre-wrap;color:#9c9}
+</style></head><body>
+<h1>Test audio</h1>
+<p>1) Lance ta musique. 2) Touche UN bouton à la fois. 3) Note si la musique se coupe. Après une coupure, relance la musique avant le test suivant.</p>
+<button data-t="session">A. Déclarer la session « ambient » seulement<small>aucun son</small></button>
+<button data-t="ctx">B. Créer le moteur audio (AudioContext)<small>aucun son joué</small></button>
+<button data-t="beep">C. Moteur audio + un bip<small>Web Audio, session ambient</small></button>
+<button data-t="beep2">D. Moteur audio + bip, sans déclarer de session<small>comportement par défaut d'iOS</small></button>
+<button data-t="wake">E. Écran allumé (wake lock)<small>aucun son</small></button>
+<button data-t="vib">F. Vibration<small>aucun son</small></button>
+<button data-t="speech">G. Voix du système (« Test »)<small>synthèse vocale</small></button>
+<button data-t="media">H. Lecteur audio silencieux (balise audio)<small>ce que faisait l'ancienne version</small></button>
+<div id="log"></div>
+<script>
+var L=document.getElementById('log'),ctx=null;
+function log(m){L.textContent=new Date().toLocaleTimeString()+'  '+m+'\n'+L.textContent}
+function sess(t){try{if(navigator.audioSession){navigator.audioSession.type=t;log('session = '+navigator.audioSession.type)}else log('audioSession non pris en charge')}catch(e){log('session erreur '+e)}}
+function mk(){var AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();log('moteur créé : '+ctx.state);return ctx.resume().then(function(){log('moteur : '+ctx.state)})}
+function bip(){var o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=880;g.gain.value=.2;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.25);log('bip joué')}
+var T={
+ session:function(){sess('ambient')},
+ ctx:function(){sess('ambient');return mk()},
+ beep:function(){sess('ambient');return mk().then(bip)},
+ beep2:function(){try{if(ctx)ctx.close()}catch(e){} ctx=null;return mk().then(bip)},
+ wake:function(){if(!navigator.wakeLock){log('wake lock non pris en charge');return}return navigator.wakeLock.request('screen').then(function(l){log('wake lock actif');setTimeout(function(){l.release();log('wake lock relâché')},5000)}).catch(function(e){log('wake lock refusé '+e)})},
+ vib:function(){log(navigator.vibrate?('vibrate → '+navigator.vibrate(200)):'vibration non prise en charge')},
+ speech:function(){var u=new SpeechSynthesisUtterance('Test');u.lang='fr-FR';speechSynthesis.cancel();speechSynthesis.speak(u);log('voix lancée')},
+ media:function(){var a=new Audio();var n=8000,b=new Uint8Array(44+n),i;function w32(o,v){b[o]=v&255;b[o+1]=v>>8&255;b[o+2]=v>>16&255;b[o+3]=v>>24&255}function w16(o,v){b[o]=v&255;b[o+1]=v>>8&255}function ws(o,t){for(var j=0;j<t.length;j++)b[o+j]=t.charCodeAt(j)}
+  ws(0,'RIFF');w32(4,36+n);ws(8,'WAVE');ws(12,'fmt ');w32(16,16);w16(20,1);w16(22,1);w32(24,8000);w32(28,8000);w16(32,1);w16(34,8);ws(36,'data');w32(40,n);for(i=0;i<n;i++)b[44+i]=128;
+  var s='';for(i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);a.src='data:audio/wav;base64,'+btoa(s);a.loop=true;return a.play().then(function(){log('lecteur silencieux en lecture');setTimeout(function(){a.pause();log('lecteur arrêté')},4000)}).catch(function(e){log('lecteur refusé '+e)})}
+};
+Array.prototype.forEach.call(document.querySelectorAll('button'),function(b){b.addEventListener('click',function(){try{var r=T[b.dataset.t]();if(r&&r.catch)r.catch(function(e){log('erreur '+e)})}catch(e){log('erreur '+e)}})});
+log('iOS ? '+/iPhone|iPad/.test(navigator.userAgent)+' · audioSession : '+(navigator.audioSession?'oui':'non'));
+</script></body></html>
