@@ -18,6 +18,9 @@ button small{display:block;color:#889;font-weight:400;font-size:12px;margin-top:
 <button data-t="vib">F. Vibration<small>aucun son</small></button>
 <button data-t="speech">G. Voix du système (« Test »)<small>synthèse vocale</small></button>
 <button data-t="media">H. Lecteur audio silencieux (balise audio)<small>ce que faisait l'ancienne version</small></button>
+<button data-t="mediabip">I. Bip par lecteur audio, session « ambient »<small>fichier son généré, balise audio</small></button>
+<button data-t="mediabip2">J. Bip par lecteur audio, sans déclarer de session<small>fichier son généré, balise audio</small></button>
+<button data-t="offline">K. Fabriquer un son en mémoire (sans le jouer)<small>moteur de calcul hors ligne</small></button>
 <div id="log"></div>
 <script>
 var L=document.getElementById('log'),ctx=null;
@@ -25,7 +28,15 @@ function log(m){L.textContent=new Date().toLocaleTimeString()+'  '+m+'\n'+L.text
 function sess(t){try{if(navigator.audioSession){navigator.audioSession.type=t;log('session = '+navigator.audioSession.type)}else log('audioSession non pris en charge')}catch(e){log('session erreur '+e)}}
 function mk(){var AC=window.AudioContext||window.webkitAudioContext;ctx=new AC();log('moteur créé : '+ctx.state);return ctx.resume().then(function(){log('moteur : '+ctx.state)})}
 function bip(){var o=ctx.createOscillator(),g=ctx.createGain();o.frequency.value=880;g.gain.value=.2;o.connect(g);g.connect(ctx.destination);o.start();o.stop(ctx.currentTime+.25);log('bip joué')}
+function wav(sec,f){var sr=22050,n=Math.floor(sr*sec),b=new Uint8Array(44+n*2),i,v=new DataView(b.buffer);function ws(o,t){for(var j=0;j<t.length;j++)b[o+j]=t.charCodeAt(j)}
+ ws(0,'RIFF');v.setUint32(4,36+n*2,true);ws(8,'WAVE');ws(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,n*2,true);
+ for(i=0;i<n;i++){var e=Math.min(1,i/200)*Math.exp(-3*i/n);v.setInt16(44+i*2,Math.sin(2*Math.PI*f*i/sr)*e*14000,true)}
+ var s='';for(i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return 'data:audio/wav;base64,'+btoa(s)}
+function mbip(){var a=new Audio(wav(0.5,880));a.volume=1;return a.play().then(function(){log('bip (lecteur audio) joué')}).catch(function(e){log('lecteur refusé '+e)})}
 var T={
+ mediabip:function(){sess('ambient');return mbip()},
+ mediabip2:function(){return mbip()},
+ offline:function(){var OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;var o=new OC(1,22050,22050);var os=o.createOscillator();os.connect(o.destination);os.start();var p=o.startRendering();log('calcul hors ligne lancé');return p.then(function(){log('calcul hors ligne terminé')})},
  session:function(){sess('ambient')},
  ctx:function(){sess('ambient');return mk()},
  beep:function(){sess('ambient');return mk().then(bip)},
