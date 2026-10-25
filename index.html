@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261025114040">
+<meta name="app-version" content="20261025120535">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1426,6 +1426,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   setMixSession();
   var actx = null;
   function ensureAudio() {
+    if (SOFT) { unlockPool(); setMixSession(); return; }
     try {
       if (actx && actx.state === 'closed') { actx = null; master = null; }
       setMixSession();   /* le type de session doit être posé AVANT la création du moteur audio, sinon iOS coupe la musique */
@@ -1587,7 +1588,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       else s(0, 880, .06);
     }
   };
-  function alertSound(kind, delaySec, forceKind) {
+  function alertSoundHW(kind, delaySec, forceKind) {
     var nodes = [];
     if (!settings.sound || !actx) return nodes;
     var out = masterOut(); if (!out) return nodes;
@@ -1598,7 +1599,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   /* ---------- son répété (par minuteur) ---------- */
   var BEAT_LIST = [['criquet', 'Criquet'], ['carraca', 'Carraca (crécelle)'], ['tic', 'Métronome'], ['cloche', 'Cloche de vache'], ['clochette', 'Clochette'], ['maracas', 'Maracas'], ['bip', 'Bip']];
-  function beatSound(kind, vol) {
+  function beatSoundHW(kind, vol) {
     if (!actx) return;
     try {
       var out = actx.createGain(); out.gain.value = Math.max(0.05, Math.min(1, vol)); out.connect(masterOut());
@@ -1627,7 +1628,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   /* cliquet d'horlogerie : petit « tic » mécanique à chaque cran de la molette */
   var lastClick = 0;
-  function wheelClick() {
+  function wheelClickHW() {
     if (!settings.sound || !actx) return;
     var n = Date.now(); if (n - lastClick < 22) return; lastClick = n;
     try {
@@ -1682,7 +1683,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#bt-vol').addEventListener('change', function () { ensureAudio(); beatSound(sel.value, parseFloat(this.value)); });
     $('#bt-test').addEventListener('click', function () { ensureAudio(); beatSound(sel.value, parseFloat($('#bt-vol').value)); });
   })();
-  function tone(freq, ms, delay) {
+  function toneHW(freq, ms, delay) {
     if (!settings.sound || !actx) return;
     try {
       var t0 = actx.currentTime + (delay || 0) / 1000;
@@ -1694,6 +1695,85 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       o.connect(g); g.connect(actx.destination);
       o.start(t0); o.stop(t0 + ms / 1000 + 0.02);
     } catch (e) {}
+  }
+
+  /* ---------- iOS : sons joués par de simples lecteurs audio ----------
+     Sur iPhone, ouvrir le moteur audio (AudioContext) interrompt la musique. Les sons sont donc fabriqués en mémoire
+     (calcul hors ligne, rien n'est joué) puis lus par des lecteurs audio, qui se mélangent à la musique. */
+  var SOFT = IS_IOS || /[?&]soft=1/.test(location.search);
+  var SR = 32000, pool = [], poolI = 0, softCache = {}, SIL_URL = '';
+  function wavUrl(buf) {
+    var d = buf.getChannelData(0), n = d.length, b = new ArrayBuffer(44 + n * 2), v = new DataView(b), i;
+    function ws(o, t) { for (var j = 0; j < t.length; j++) v.setUint8(o + j, t.charCodeAt(j)); }
+    ws(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); ws(8, 'WAVE'); ws(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, buf.sampleRate, true); v.setUint32(28, buf.sampleRate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); ws(36, 'data'); v.setUint32(40, n * 2, true);
+    for (i = 0; i < n; i++) { var x = Math.max(-1, Math.min(1, d[i])); v.setInt16(44 + i * 2, x < 0 ? x * 32768 : x * 32767, true); }
+    return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
+  }
+  function poolInit() {
+    if (pool.length) return;
+    for (var i = 0; i < 8; i++) { var a = new Audio(); a.preload = 'auto'; a.setAttribute('playsinline', ''); pool.push(a); }
+  }
+  function unlockPool() {
+    poolInit();
+    if (!SIL_URL) { try { var c = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, 800, SR); c.startRendering().then(function (b) { SIL_URL = wavUrl(b); }); } catch (e) {} }
+    pool.forEach(function (a) {
+      if (a.__u) return; a.__u = 1;
+      try { a.src = SIL_URL || 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA='; var p = a.play(); if (p && p.then) p.then(function () { a.pause(); }).catch(function () { a.__u = 0; }); } catch (e) { a.__u = 0; }
+    });
+  }
+  function playUrl(url) {
+    poolInit(); var a = pool[poolI++ % pool.length];
+    try { a.pause(); a.src = url; a.currentTime = 0; var p = a.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+    return a;
+  }
+  /* fabrique (ou retrouve) un son : build() utilise les mêmes fonctions de synthèse que sur Android */
+  function softRender(key, dur, build, cb) {
+    if (softCache[key]) { cb(softCache[key]); return; }
+    try {
+      var OC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      var oc = new OC(1, Math.max(256, Math.ceil(dur * SR)), SR);
+      var keepA = actx, keepM = master; actx = oc; master = null;
+      try { build(); } finally { actx = keepA; master = keepM; }
+      var pr = oc.startRendering();
+      var done = function (buf) { softCache[key] = wavUrl(buf); cb(softCache[key]); };
+      if (pr && pr.then) pr.then(done).catch(function () {}); else oc.oncomplete = function (e) { done(e.renderedBuffer); };
+    } catch (e) {}
+  }
+  function softPlay(key, dur, build, delaySec) {
+    var h = { t: 0, a: null, dead: false, stop: function () { h.dead = true; clearTimeout(h.t); try { if (h.a) h.a.pause(); } catch (e) {} } };
+    softRender(key, dur, build, function (url) {
+      if (h.dead) return;
+      if (delaySec > 0) h.t = setTimeout(function () { if (!h.dead) h.a = playUrl(url); }, delaySec * 1000); else h.a = playUrl(url);
+    });
+    return h;
+  }
+  function alertSound(kind, delaySec, forceKind) {
+    if (!SOFT) return alertSoundHW(kind, delaySec, forceKind);
+    if (!settings.sound) return [];
+    var snd = forceKind || settings.alert, vol = settings.volume;
+    return [softPlay('a|' + kind + '|' + snd + '|' + vol, 4.2, function () { alertSoundHW(kind, 0, forceKind); }, delaySec || 0)];
+  }
+  function beatSound(kind, vol) {
+    if (!SOFT) return beatSoundHW(kind, vol);
+    softPlay('b|' + kind + '|' + vol, 1.6, function () { beatSoundHW(kind, vol); }, 0);
+  }
+  function wheelClick() {
+    if (!SOFT) return wheelClickHW();
+    if (!settings.sound) return;
+    var n = Date.now(); if (n - lastClick < 22) return; lastClick = n;
+    softPlay('w', 0.12, function () { wheelClickHW(); }, 0);
+  }
+  function tone(freq, ms, delay) {
+    if (!SOFT) return toneHW(freq, ms, delay);
+    if (!settings.sound) return;
+    softPlay('t|' + freq + '|' + ms + '|' + settings.volume, ms / 1000 + 0.08, function () { toneHW(freq, ms, 0); }, (delay || 0) / 1000);
+  }
+  /* prépare à l'avance les sons d'une séance pour qu'ils partent sans retard */
+  function warmSounds() {
+    if (!SOFT || !settings.sound) return;
+    ['go', 'setEnd', 'end', 'minute'].forEach(function (k) { alertSound(k, 99999).forEach(function (h) { h.stop(); }); });
+    [[660, 300], [760, 130], [620, 130]].forEach(function (p) { softRender('t|' + p[0] + '|' + p[1] + '|' + settings.volume, p[1] / 1000 + 0.08, function () { toneHW(p[0], p[1], 0); }, function () {}); });
   }
   function vibrate(p) { if (settings.vibrate) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} } }
   /* ---------- voice ---------- */
@@ -1746,7 +1826,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function startRun(w) {
     var segs = build(w);
     if (!segs.length) { toast('Ce minuteur est vide'); return; }
-    ensureAudio();
+    ensureAudio(); warmSounds();
     run = { w: w, segs: segs, i: 0, end: 0, paused: false, pausedRem: 0, lastSec: -1, cueSec: 0, finished: false, totalDur: segs.reduce(function (a, s) { return a + s.dur; }, 0) };
     $('#runner').hidden = false; $('#r-confirm').hidden = true; $('#r-done').hidden = true; $('#runner').classList.remove('paused');
     $('#r-ico').innerHTML = ICO_PAUSE; $('#r-toggle').setAttribute('aria-label', 'Pause');
@@ -2192,7 +2272,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     ensureAudio();
     dial.end = Date.now() + dial.rem; dial.state = 'running';
     dialCancelAlarm();
-    if (settings.sound && actx && actx.state === 'running') dial.alarm = alertSound('end', dial.rem / 1000);
+    if (settings.sound && (SOFT || (actx && actx.state === 'running'))) dial.alarm = alertSound('end', dial.rem / 1000);
     clearInterval(dial.timer); dial.timer = setInterval(dialTick, 100);
     acquireWake(); persistLive(); keepAliveCheck(); renderDial();
   }
