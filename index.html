@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261026193907">
+<meta name="app-version" content="20261026194836">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -509,6 +509,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .wheel-list div { height: 28px; line-height: 28px; text-align: center; scroll-snap-align: center; font-family: var(--fd); font-size: 16px; font-weight: 500; letter-spacing: .04em; color: var(--muted); font-variant-numeric: tabular-nums; transition: color .12s, font-size .12s; }
 .wheel-list div.on { color: var(--accent); font-size: 22px; font-weight: 700; }
 .wheel::after { content: attr(data-unit); position: absolute; right: 9px; top: 50%; transform: translateY(-50%); z-index: 3; font-family: var(--fd); font-size: 11px; letter-spacing: .1em; color: var(--muted); pointer-events: none; text-transform: uppercase; }
+/* verre bombé « cyclope » : fenêtre à lisérés chromés, reflet en biais et chiffre grossi sous la loupe */
+.wheel-band { left: 4px; right: 4px; height: 36px; border: 1px solid rgba(255,255,255,.34); border-radius: 7px;
+  background:
+    linear-gradient(158deg, rgba(255,255,255,.26) 0%, rgba(255,255,255,.08) 36%, rgba(255,255,255,0) 37%, rgba(255,255,255,0) 72%, rgba(255,255,255,.07) 100%),
+    radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.12), rgba(255,255,255,0) 60%);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 5px rgba(0,0,0,.55), inset 0 0 10px rgba(0,0,0,.35), 0 3px 8px -2px rgba(0,0,0,.8); }
+.wheel-band::before, .wheel-band::after { display: none; }
+.wheel-list div.on, .wheels .wheel-list div.on { font-size: 29px; font-weight: 700; text-shadow: 0 1px 0 rgba(0,0,0,.6); transform: translateX(-1px); }
+.wheels.armed .wheel-band, .wheel.gate.armed .wheel-band { border-color: color-mix(in srgb, var(--accent) 70%, #fff 30%); }
 .bt-wheelrow { align-items: center; }
 /* molettes de l'éditeur : un seul boîtier par réglage, comme un cadran ; inertes tant qu'on ne les a pas touchées */
 .wheels { display: flex; align-items: stretch; flex: none; position: relative; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); overflow: hidden; cursor: pointer;
