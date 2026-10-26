@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261025162422">
+<meta name="app-version" content="20261026190453">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -504,8 +504,16 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .wheel-list::-webkit-scrollbar { display: none; }
 .wheel-list div { height: 28px; line-height: 28px; text-align: center; scroll-snap-align: center; font-family: var(--fd); font-size: 16px; font-weight: 500; letter-spacing: .04em; color: var(--muted); font-variant-numeric: tabular-nums; transition: color .12s, font-size .12s; }
 .wheel-list div.on { color: var(--accent); font-size: 22px; font-weight: 700; }
-.wheel::after { content: 's'; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); z-index: 3; font-family: var(--fd); font-size: 11px; letter-spacing: .1em; color: var(--muted); pointer-events: none; text-transform: uppercase; }
+.wheel::after { content: attr(data-unit); position: absolute; right: 9px; top: 50%; transform: translateY(-50%); z-index: 3; font-family: var(--fd); font-size: 11px; letter-spacing: .1em; color: var(--muted); pointer-events: none; text-transform: uppercase; }
 .bt-wheelrow { align-items: center; }
+.wheels { display: flex; align-items: center; gap: 6px; flex: none; }
+.wheel.sm { width: 74px; flex: none; }
+.wheel.sm .wheel-list div { padding-right: 18px; }
+.wheel.sm.nounit { width: 64px; }
+.wheel.sm.nounit .wheel-list div { padding-right: 0; }
+.wheel.sm::after { right: 7px; }
+.wheel.sm:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field.dim .wheels { pointer-events: none; }
 /* ---- compact timer layout ---- */
 #v-dial .dial, .dial { width: min(100%, 400px, 52vh); }
 .dial-title { min-height: 36px; }
@@ -772,7 +780,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><label for="bt-on">Son régulier<small>Un son à intervalle fixe pendant chaque effort (se mélange à la musique)</small></label><span class="switch"><input type="checkbox" id="bt-on"><i></i></span></div>
       <div id="bt-opts">
       <div class="row"><label for="bt-sound">Son</label><select id="bt-sound"></select></div>
-      <div class="row bt-wheelrow"><label id="bt-every-l">Toutes les (secondes)</label><div class="wheel" id="bt-every" role="spinbutton" aria-labelledby="bt-every-l" tabindex="0"><div class="wheel-band"></div><div class="wheel-list" id="bt-wlist"></div></div></div>
+      <div class="row bt-wheelrow"><label id="bt-every-l">Toutes les (secondes)</label><div class="wheel" id="bt-every" data-unit="s" role="spinbutton" aria-labelledby="bt-every-l" tabindex="0"><div class="wheel-band"></div><div class="wheel-list" id="bt-wlist"></div></div></div>
       <div class="row"><label for="bt-vol">Volume</label><input type="range" id="bt-vol" min="0.1" max="1" step="0.05"></div>
       <div class="row"><span class="lbl">Écouter</span><button class="btn ghost" type="button" id="bt-test">Tester</button></div>
       </div>
@@ -1021,16 +1029,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     ['cycleRest', 'Repos entre cycles', 'time', 0, 3599, 'between'],
     ['cool', 'Retour au calme', 'time', 0, 3599, 'cool']
   ];
-  var draft = null, editingId = null, inputs = {}, rows = {};
-  /* Un appui = 1 seconde ; en maintenant, le pas passe à 5, 15 puis 30 secondes. */
-  function stepFor(kind, n) {
-    if (kind === 'count' || n <= 10) return 1;
-    return n <= 20 ? 5 : (n <= 32 ? 15 : 30);
-  }
+  var draft = null, editingId = null, wheels = {}, rows = {};
   function refreshEditor() {
     FIELDS.forEach(function (f) {
-      var k = f[0], inp = inputs[k];
-      inp.value = f[2] === 'time' ? fmt(draft[k]) : String(draft[k]);
+      var k = f[0], w = wheels[k], v = draft[k];
+      if (f[2] === 'time') { w.m.set(Math.floor(v / 60)); w.s.set(v % 60); } else w.n.set(v);
     });
     rows.cycleRest.classList.toggle('dim', draft.cycles < 2);
     $('#ed-total').textContent = fmt(total(draft));
@@ -1288,45 +1291,74 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     v = Math.min(f[4], Math.max(f[3], v));
     draft[f[0]] = v; refreshEditor();
   }
+  /* Molette verticale (même modèle que « Toutes les (secondes) » du son répété) : une liste d'entiers consécutifs
+     à partir de `lo`, un cran de 28 px par valeur, un clic de cliquet à chaque cran. */
+  function makeWheel(id, label, lo, hi, unit, onPick) {
+    var H = 28, box = el('div', 'wheel sm'), list = el('div', 'wheel-list'), band = el('div', 'wheel-band');
+    box.id = id; box.tabIndex = 0; box.setAttribute('role', 'spinbutton'); box.setAttribute('aria-label', label);
+    box.setAttribute('aria-valuemin', lo); box.setAttribute('aria-valuemax', hi);
+    if (unit) box.setAttribute('data-unit', unit); else box.classList.add('nounit');
+    for (var q = lo; q <= hi; q++) list.appendChild(el('div', null, String(q)));
+    box.appendChild(band); box.appendChild(list);
+    var hl = -1, quiet = false, qt = 0, wt = 0, val = lo, lock = 0, tok = 0;
+    function idx() { return Math.max(0, Math.min(hi - lo, Math.round(list.scrollTop / H))); }
+    function mark() {
+      var i = idx();
+      if (i === hl) return;
+      if (list.children[hl]) list.children[hl].classList.remove('on');
+      var first = hl < 0; hl = i; list.children[i].classList.add('on');
+      if (!first && !quiet) wheelClick();
+    }
+    function set(v) {
+      v = Math.max(lo, Math.min(hi, v)); val = v;
+      box.setAttribute('aria-valuenow', v);
+      if (list.offsetParent && idx() === v - lo && hl === v - lo) return;
+      quiet = true; clearTimeout(qt); qt = setTimeout(function () { quiet = false; }, 700);
+      lock = Date.now() + 150;
+      var my = ++tok;
+      var go = function () { if (val === v && my === tok) { list.scrollTop = (v - lo) * H; mark(); } };
+      go(); setTimeout(go, 40); setTimeout(go, 220); setTimeout(go, 520);
+    }
+    list.addEventListener('scroll', function () {
+      mark(); clearTimeout(wt);
+      wt = setTimeout(function () {
+        if (Date.now() < lock) return;
+        var v = lo + idx();
+        if (v !== val) { val = v; box.setAttribute('aria-valuenow', v); onPick(v); }
+      }, 90);
+    }, { passive: true });
+    box.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault(); list.scrollTop += (e.key === 'ArrowUp' ? -H : H);
+    });
+    ['pointerdown', 'touchstart', 'wheel'].forEach(function (t) { box.addEventListener(t, function () { tok++; }, { passive: true }); });
+    box.setVal = set;
+    box.resync = function () { hl = -1; set(val); };
+    return box;
+  }
+  function syncWheels() {
+    FIELDS.forEach(function (f) { var w = wheels[f[0]]; Object.keys(w).forEach(function (j) { w[j].box.resync(); }); });
+  }
   function buildEditorFields() {
-    var host = $('#ed-fields'); host.textContent = ''; inputs = {}; rows = {};
+    var host = $('#ed-fields'); host.textContent = ''; wheels = {}; rows = {};
     FIELDS.forEach(function (f) {
       var row = el('div', 'field'); rows[f[0]] = row;
       var nm = el('div', 'nm');
       if (f[5]) nm.appendChild(el('i', 'dot c-' + f[5]));
       nm.appendChild(el('span', null, f[1]));
       row.appendChild(nm);
-      var st = el('div', 'step');
-      var minus = el('button', null, '−'); minus.type = 'button'; minus.setAttribute('aria-label', 'Diminuer ' + f[1]);
-      var plus = el('button', null, '+'); plus.type = 'button'; plus.setAttribute('aria-label', 'Augmenter ' + f[1]);
-      var inp = el('input', 'num'); inp.type = 'text'; inp.inputMode = 'numeric'; inp.id = 'f-' + f[0];
-      inp.setAttribute('aria-label', f[1]);
-      inp.addEventListener('focus', function () { inp.select(); });
-      inp.addEventListener('change', function () { setField(f, f[2] === 'time' ? parseTime(inp.value) : (parseInt(inp.value, 10) || f[3])); });
-      inputs[f[0]] = inp;
-      [[minus, -1], [plus, 1]].forEach(function (pair) {
-        var b = pair[0], dir = pair[1], timer = null, delay = null, n = 0, held = false, live = false, x0 = 0, y0 = 0;
-        function tick() {
-          n++;
-          var v = draft[f[0]], st = stepFor(f[2], n);
-          if (st > 1) v = dir > 0 ? (Math.floor(v / st) + 1) * st : (Math.ceil(v / st) - 1) * st; else v += dir;
-          setField(f, v);
-        }
-        function stop() { clearTimeout(delay); clearInterval(timer); delay = null; timer = null; }
-        /* Un toucher simple compte au relâchement ; un appui long répète (et accélère). Un défilement ou un glissement
-           commencé sur le bouton n'a aucun effet : sinon faire défiler l'éditeur changerait des valeurs sans le vouloir. */
-        b.addEventListener('pointerdown', function (e) {
-          stop(); n = 0; held = false; live = true; x0 = e.clientX; y0 = e.clientY;
-          delay = setTimeout(function () { held = true; tick(); timer = setInterval(tick, 110); }, 380);
-        });
-        b.addEventListener('pointermove', function (e) {
-          if (live && (Math.abs(e.clientX - x0) > 8 || Math.abs(e.clientY - y0) > 8)) { live = false; stop(); }
-        });
-        b.addEventListener('pointerup', function () { if (live && !held) tick(); live = false; stop(); });
-        ['pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, function () { live = false; stop(); }); });
-        b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); n = 0; tick(); } });
-      });
-      st.appendChild(minus); st.appendChild(inp); st.appendChild(plus);
+      var st = el('div', 'wheels');
+      function wrap(box) { return { box: box, set: function (v) { box.setVal(v); } }; }
+      var k = f[0], w = {};
+      if (f[2] === 'time') {
+        var bm = makeWheel('f-' + k + '-m', f[1] + ', minutes', 0, 59, 'min', function (v) { setField(f, v * 60 + draft[k] % 60); });
+        var bs = makeWheel('f-' + k + '-s', f[1] + ', secondes', 0, 59, 's', function (v) { setField(f, Math.floor(draft[k] / 60) * 60 + v); });
+        w.m = wrap(bm); w.s = wrap(bs); st.appendChild(bm); st.appendChild(bs);
+      } else {
+        var bn = makeWheel('f-' + k, f[1], f[3], f[4], '', function (v) { setField(f, v); });
+        w.n = wrap(bn); st.appendChild(bn);
+      }
+      wheels[k] = w;
       row.appendChild(st);
       host.appendChild(row);
     });
@@ -1385,6 +1417,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     deleteArmed = false; $('#ed-delete').textContent = 'Supprimer';
     buildEditorFields(); refreshEditor(); if (window.syncBeatUI) window.syncBeatUI(); cqToggleSync();
     $('#editor').hidden = false;
+    syncWheels();
     $('.ed-body').scrollTop = 0;
     fitEditor();
   }
@@ -1661,7 +1694,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var WV = [], wl = $('#bt-wlist'), wt = 0, H = 28;
     for (var q = 1; q <= 300; q++) WV.push(q);
     WV.forEach(function (v) { var d = document.createElement('div'); d.textContent = v; wl.appendChild(d); });
-    function wheelSet(v) { quiet = true; clearTimeout(qt); qt = setTimeout(function () { quiet = false; }, 450); var i = Math.max(0, Math.min(WV.length - 1, v - 1)); var go = function () { wl.scrollTop = i * H; }; go(); mark(); setTimeout(function () { go(); mark(); }, 30); setTimeout(function () { go(); mark(); }, 200); }
+    function wheelSet(v) { quiet = true; clearTimeout(qt); qt = setTimeout(function () { quiet = false; }, 700); var i = Math.max(0, Math.min(WV.length - 1, v - 1)); var go = function () { wl.scrollTop = i * H; }; go(); mark(); setTimeout(function () { go(); mark(); }, 30); setTimeout(function () { go(); mark(); }, 200); }
     var hl = -1, quiet = false, qt = 0;
     function mark() { var i = Math.max(0, Math.min(WV.length - 1, Math.round(wl.scrollTop / H))); if (i !== hl) { if (wl.children[hl]) wl.children[hl].classList.remove('on'); var first = hl < 0; hl = i; wl.children[i].classList.add('on'); if (!first && !quiet) wheelClick(); } }
     wl.addEventListener('scroll', function () {
