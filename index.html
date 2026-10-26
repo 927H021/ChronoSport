@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261026191429">
+<meta name="app-version" content="20261026192415">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -281,6 +281,10 @@ select { background: var(--fill); color: var(--accent); border: 0; border-radius
 .name-in::placeholder { color: var(--muted); }
 .field { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 12px 6px 16px; }
 .field.dim { opacity: .4; }
+.field { padding: 8px 12px 8px 16px; }
+.field .tx { min-width: 0; }
+.field .tx span { display: block; }
+.field .tx small { display: block; color: var(--muted); font-size: 13px; letter-spacing: 0; line-height: 1.25; margin-top: 2px; }
 .field .nm { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
 .step { display: flex; align-items: center; gap: 10px; flex: none; }
 .step input { order: -1; width: 70px; height: 36px; text-align: right; border: 0; background: transparent; color: var(--accent); font: inherit; font-size: 20px; font-weight: 500; padding: 0; font-variant-numeric: tabular-nums; letter-spacing: 0; }
@@ -781,7 +785,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <label for="ed-name" style="position:absolute;left:-9999px">Nom du minuteur</label>
     <input class="name-in" id="ed-name" type="text" maxlength="40" placeholder="Nom du minuteur" autocomplete="off">
     <div class="group" id="ed-fields"></div>
-    <div class="foot">Touchez − ou + pour régler à la seconde près (maintenez pour accélérer), ou tapez directement « 1:30 » ou « 90 ».</div>
+    <div class="foot">Touchez une molette pour la sélectionner, puis faites-la défiler. Les durées se règlent à la seconde près.</div>
     <div id="bt-section">
     <div class="section-title">Son répété pendant l'effort</div>
     <div class="group">
@@ -1029,13 +1033,13 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
   /* ---------- editor ---------- */
   var FIELDS = [
-    ['prep', 'Préparation', 'time', 0, 3599, 'prep'],
-    ['work', 'Effort', 'time', 1, 3599, 'work'],
-    ['rest', 'Repos', 'time', 0, 3599, 'rest'],
-    ['sets', 'Séries', 'count', 1, 99, null],
-    ['cycles', 'Cycles', 'count', 1, 99, null],
-    ['cycleRest', 'Repos entre cycles', 'time', 0, 3599, 'between'],
-    ['cool', 'Retour au calme', 'time', 0, 3599, 'cool']
+    ['prep', 'Préparation', 'time', 0, 3599, 'prep', "Compte à rebours avant le début"],
+    ['work', 'Effort', 'time', 1, 3599, 'work', "Durée de chaque effort"],
+    ['rest', 'Repos', 'time', 0, 3599, 'rest', "Pause entre deux séries"],
+    ['sets', 'Séries', 'count', 1, 99, null, "Nombre d'efforts par cycle"],
+    ['cycles', 'Cycles', 'count', 1, 99, null, "Nombre de fois où l'on enchaîne les séries"],
+    ['cycleRest', 'Repos entre cycles', 'time', 0, 3599, 'between', "Pause entre deux cycles"],
+    ['cool', 'Retour au calme', 'time', 0, 3599, 'cool', "Récupération à la fin de la séance"]
   ];
   var draft = null, editingId = null, wheels = {}, rows = {};
   function refreshEditor() {
@@ -1364,7 +1368,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       var row = el('div', 'field'); rows[f[0]] = row;
       var nm = el('div', 'nm');
       if (f[5]) nm.appendChild(el('i', 'dot c-' + f[5]));
-      nm.appendChild(el('span', null, f[1]));
+      var tx = el('div', 'tx'); tx.appendChild(el('span', null, f[1])); if (f[6]) tx.appendChild(el('small', null, f[6]));
+      nm.appendChild(tx);
       row.appendChild(nm);
       var st = el('div', 'wheels'); armable(st);
       function wrap(box) { return { box: box, set: function (v) { box.setVal(v); } }; }
