@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261026192415">
+<meta name="app-version" content="20261026193231">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -526,6 +526,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .wheels.armed .wheel-list { pointer-events: auto; }
 .wheels.armed .wheel-list div.on { color: var(--accent); }
 .field.dim .wheels { pointer-events: none; }
+.wheel.gate { cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.wheel.gate .wheel-list { pointer-events: none; }
+.wheel.gate .wheel-list div.on { color: var(--fg); }
+.wheel.gate.armed { border-color: var(--accent); cursor: default; box-shadow: 0 0 0 1px var(--accent), 0 0 14px -4px var(--accent), inset 0 8px 14px -8px rgba(0,0,0,.7), inset 0 -8px 14px -8px rgba(0,0,0,.7); }
+.wheel.gate.armed .wheel-list { pointer-events: auto; }
+.wheel.gate.armed .wheel-list div.on { color: var(--accent); }
 /* ---- compact timer layout ---- */
 #v-dial .dial, .dial { width: min(100%, 400px, 52vh); }
 .dial-title { min-height: 36px; }
@@ -785,14 +791,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     <label for="ed-name" style="position:absolute;left:-9999px">Nom du minuteur</label>
     <input class="name-in" id="ed-name" type="text" maxlength="40" placeholder="Nom du minuteur" autocomplete="off">
     <div class="group" id="ed-fields"></div>
-    <div class="foot">Touchez une molette pour la sélectionner, puis faites-la défiler. Les durées se règlent à la seconde près.</div>
+    <div class="foot">Pour modifier une durée ou un nombre, touchez d'abord la molette pour la sélectionner (son contour devient orange), puis faites-la défiler. Tant qu'elle n'est pas sélectionnée, faire défiler la page ne la change pas. Les durées se règlent à la seconde près.</div>
     <div id="bt-section">
     <div class="section-title">Son répété pendant l'effort</div>
     <div class="group">
       <div class="row"><label for="bt-on">Son régulier<small>Un son à intervalle fixe pendant chaque effort (se mélange à la musique)</small></label><span class="switch"><input type="checkbox" id="bt-on"><i></i></span></div>
       <div id="bt-opts">
       <div class="row"><label for="bt-sound">Son</label><select id="bt-sound"></select></div>
-      <div class="row bt-wheelrow"><label id="bt-every-l">Toutes les (secondes)</label><div class="wheel" id="bt-every" data-unit="s" role="spinbutton" aria-labelledby="bt-every-l" tabindex="0"><div class="wheel-band"></div><div class="wheel-list" id="bt-wlist"></div></div></div>
+      <div class="row bt-wheelrow"><label id="bt-every-l">Toutes les (secondes)<small>Touchez la molette pour la sélectionner, puis faites-la défiler</small></label><div class="wheel gate" id="bt-every" data-unit="s" role="spinbutton" aria-labelledby="bt-every-l" tabindex="0"><div class="wheel-band"></div><div class="wheel-list" id="bt-wlist"></div></div></div>
       <div class="row"><label for="bt-vol">Volume</label><input type="range" id="bt-vol" min="0.1" max="1" step="0.05"></div>
       <div class="row"><span class="lbl">Écouter</span><button class="btn ghost" type="button" id="bt-test">Tester</button></div>
       </div>
@@ -1363,7 +1369,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     FIELDS.forEach(function (f) { var w = wheels[f[0]]; Object.keys(w).forEach(function (j) { w[j].box.resync(); }); });
   }
   function buildEditorFields() {
-    var host = $('#ed-fields'); host.textContent = ''; wheels = {}; rows = {}; armedBox = null;
+    var host = $('#ed-fields'); host.textContent = ''; wheels = {}; rows = {}; disarm();
     FIELDS.forEach(function (f) {
       var row = el('div', 'field'); rows[f[0]] = row;
       var nm = el('div', 'nm');
@@ -1715,6 +1721,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       $('#bt-opts').hidden = !b.on;
       wheelSet(b.every);
     };
+    armable($('#bt-every'));
     var WV = [], wl = $('#bt-wlist'), wt = 0, H = 28;
     for (var q = 1; q <= 300; q++) WV.push(q);
     WV.forEach(function (v) { var d = document.createElement('div'); d.textContent = v; wl.appendChild(d); });
