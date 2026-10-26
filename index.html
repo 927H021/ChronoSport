@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261026190453">
+<meta name="app-version" content="20261026191429">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -506,13 +506,21 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .wheel-list div.on { color: var(--accent); font-size: 22px; font-weight: 700; }
 .wheel::after { content: attr(data-unit); position: absolute; right: 9px; top: 50%; transform: translateY(-50%); z-index: 3; font-family: var(--fd); font-size: 11px; letter-spacing: .1em; color: var(--muted); pointer-events: none; text-transform: uppercase; }
 .bt-wheelrow { align-items: center; }
-.wheels { display: flex; align-items: center; gap: 6px; flex: none; }
-.wheel.sm { width: 74px; flex: none; }
-.wheel.sm .wheel-list div { padding-right: 18px; }
-.wheel.sm.nounit { width: 64px; }
-.wheel.sm.nounit .wheel-list div { padding-right: 0; }
-.wheel.sm::after { right: 7px; }
-.wheel.sm:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* molettes de l'éditeur : un seul boîtier par réglage, comme un cadran ; inertes tant qu'on ne les a pas touchées */
+.wheels { display: flex; align-items: stretch; flex: none; position: relative; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); overflow: hidden; cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04), inset 0 8px 14px -8px rgba(0,0,0,.7), inset 0 -8px 14px -8px rgba(0,0,0,.7); transition: border-color .15s, box-shadow .15s; }
+.wheels .wheel { width: 76px; height: 84px; border: 0; border-radius: 0; box-shadow: none; background: transparent; flex: none; }
+.wheels .wheel + .wheel { border-left: 1px solid var(--line); }
+.wheels .wheel.nounit { width: 92px; }
+.wheels .wheel-list { pointer-events: none; padding-right: 16px; }
+.wheels .wheel.nounit .wheel-list { padding-right: 0; }
+.wheels .wheel-list div.on { color: var(--fg); }
+.wheels .wheel::after { right: 8px; }
+.wheels .wheel:not(:first-child) .wheel-band::before, .wheels .wheel:not(:last-child) .wheel-band::after { display: none; }
+.wheels .wheel:focus { outline: none; }
+.wheels.armed { border-color: var(--accent); cursor: default; box-shadow: 0 0 0 1px var(--accent), 0 0 14px -4px var(--accent), inset 0 8px 14px -8px rgba(0,0,0,.7), inset 0 -8px 14px -8px rgba(0,0,0,.7); }
+.wheels.armed .wheel-list { pointer-events: auto; }
+.wheels.armed .wheel-list div.on { color: var(--accent); }
 .field.dim .wheels { pointer-events: none; }
 /* ---- compact timer layout ---- */
 #v-dial .dial, .dial { width: min(100%, 400px, 52vh); }
@@ -1293,12 +1301,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   /* Molette verticale (même modèle que « Toutes les (secondes) » du son répété) : une liste d'entiers consécutifs
      à partir de `lo`, un cran de 28 px par valeur, un clic de cliquet à chaque cran. */
-  function makeWheel(id, label, lo, hi, unit, onPick) {
-    var H = 28, box = el('div', 'wheel sm'), list = el('div', 'wheel-list'), band = el('div', 'wheel-band');
+  function makeWheel(id, label, lo, hi, unit, onPick, pad) {
+    var H = 28, box = el('div', 'wheel'), list = el('div', 'wheel-list'), band = el('div', 'wheel-band');
     box.id = id; box.tabIndex = 0; box.setAttribute('role', 'spinbutton'); box.setAttribute('aria-label', label);
     box.setAttribute('aria-valuemin', lo); box.setAttribute('aria-valuemax', hi);
     if (unit) box.setAttribute('data-unit', unit); else box.classList.add('nounit');
-    for (var q = lo; q <= hi; q++) list.appendChild(el('div', null, String(q)));
+    for (var q = lo; q <= hi; q++) list.appendChild(el('div', null, pad && q < 10 ? '0' + q : String(q)));
     box.appendChild(band); box.appendChild(list);
     var hl = -1, quiet = false, qt = 0, wt = 0, val = lo, lock = 0, tok = 0;
     function idx() { return Math.max(0, Math.min(hi - lo, Math.round(list.scrollTop / H))); }
@@ -1336,23 +1344,34 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     box.resync = function () { hl = -1; set(val); };
     return box;
   }
+  /* un réglage ne se modifie qu'après l'avoir touché : sinon faire défiler l'éditeur au doigt tournerait les molettes */
+  var armedBox = null;
+  function disarm() { if (armedBox) { armedBox.classList.remove('armed'); armedBox = null; } }
+  function armable(box) {
+    box.addEventListener('click', function () {
+      if (box === armedBox) return;
+      disarm(); armedBox = box; box.classList.add('armed');
+      ensureAudio();                                 /* le cliquet n'est audible qu'après un geste de l'utilisateur */
+    });
+  }
+  document.addEventListener('pointerdown', function (e) { if (armedBox && !armedBox.contains(e.target)) disarm(); }, true);
   function syncWheels() {
     FIELDS.forEach(function (f) { var w = wheels[f[0]]; Object.keys(w).forEach(function (j) { w[j].box.resync(); }); });
   }
   function buildEditorFields() {
-    var host = $('#ed-fields'); host.textContent = ''; wheels = {}; rows = {};
+    var host = $('#ed-fields'); host.textContent = ''; wheels = {}; rows = {}; armedBox = null;
     FIELDS.forEach(function (f) {
       var row = el('div', 'field'); rows[f[0]] = row;
       var nm = el('div', 'nm');
       if (f[5]) nm.appendChild(el('i', 'dot c-' + f[5]));
       nm.appendChild(el('span', null, f[1]));
       row.appendChild(nm);
-      var st = el('div', 'wheels');
+      var st = el('div', 'wheels'); armable(st);
       function wrap(box) { return { box: box, set: function (v) { box.setVal(v); } }; }
       var k = f[0], w = {};
       if (f[2] === 'time') {
         var bm = makeWheel('f-' + k + '-m', f[1] + ', minutes', 0, 59, 'min', function (v) { setField(f, v * 60 + draft[k] % 60); });
-        var bs = makeWheel('f-' + k + '-s', f[1] + ', secondes', 0, 59, 's', function (v) { setField(f, Math.floor(draft[k] / 60) * 60 + v); });
+        var bs = makeWheel('f-' + k + '-s', f[1] + ', secondes', 0, 59, 's', function (v) { setField(f, Math.floor(draft[k] / 60) * 60 + v); }, true);
         w.m = wrap(bm); w.s = wrap(bs); st.appendChild(bm); st.appendChild(bs);
       } else {
         var bn = makeWheel('f-' + k, f[1], f[3], f[4], '', function (v) { setField(f, v); });
