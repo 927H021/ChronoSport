@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027182816">
+<meta name="app-version" content="20261027183219">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1513,7 +1513,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   var deleteArmed = false;
   function openEditor(w, restored) {
     editingId = w ? w.id : (restored ? restored.editingId : null);
-    draft = restored ? restored.draft : w ? clone(w) : { name: '', prep: 10, work: 30, rest: 15, sets: 8, cycles: 1, cycleRest: 60, cool: 0 };
+    draft = restored ? restored.draft : w ? clone(w) : { name: '', prep: 10, work: 30, rest: 15, sets: 8, cycles: 1, cycleRest: 60, cool: 0, cuesSame: false };
     edSet = 0; cqKey = ''; cqFocus = 0; cqSel = null;
     var isEdit = !!editingId;
     $('#ed-title').textContent = isEdit ? 'Modifier' : 'Nouveau minuteur';
