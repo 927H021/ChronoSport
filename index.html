@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027182107">
+<meta name="app-version" content="20261027182816">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1397,8 +1397,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     function mark() {
       var i = idx();
       if (i === hl) return;
-      if (list.children[hl]) list.children[hl].classList.remove('on');
-      var first = hl < 0; hl = i; list.children[i].classList.add('on');
+      var first = hl < 0;
+      Array.prototype.forEach.call(list.querySelectorAll('.on'), function (d) { d.classList.remove('on'); });
+      hl = i; list.children[i].classList.add('on');
       if (!first && !quiet) wheelClick();
     }
     function set(v) {
