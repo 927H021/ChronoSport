@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027185547">
+<meta name="app-version" content="20261027190305">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1794,7 +1794,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       note({ type: 'sine', f: 950, t: t + 0.004, atk: 0.001, hold: 0.004, rel: 0.03, peak: 0.12, out: out, nodes: nodes });
     } catch (e) {}
   }
-  function beatCfg(w) { var b = (w && w.beat) || {}; return { on: !!b.on, sound: (BEAT_LIST.some(function (x) { return x[0] === b.sound; }) ? b.sound : 'criquet'), vol: b.vol != null ? b.vol : 0.7, every: Math.max(1, parseInt(b.every, 10) || 10) }; }
+  function beatCfg(w) { var b = (w && w.beat) || {}; return { on: !!b.on, sound: (BEAT_LIST.some(function (x) { return x[0] === b.sound; }) ? b.sound : 'criquet'), vol: b.vol != null ? b.vol : 0.7, every: Math.max(1, parseInt(b.every, 10) || 60) }; }
   function beatTick(remMs) {
     var s = run.segs[run.i];
     if (s.type !== 'work' || !settings.sound) return;
@@ -1807,7 +1807,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   (function () {
     var sel = $('#bt-sound');
     BEAT_LIST.forEach(function (x) { var o = el('option', '', x[1]); o.value = x[0]; sel.appendChild(o); });
-    function cur() { if (!draft) return null; if (!draft.beat) draft.beat = { on: false, sound: 'criquet', vol: 0.7, every: 10 }; return draft.beat; }
+    function cur() { if (!draft) return null; if (!draft.beat) draft.beat = { on: false, sound: 'criquet', vol: 0.7, every: 60 }; return draft.beat; }
     window.syncBeatUI = function () {
       var b = beatCfg(draft); $('#bt-on').checked = b.on; sel.value = b.sound; $('#bt-vol').value = String(b.vol);
       $('#bt-opts').hidden = !b.on;
