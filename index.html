@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027190305">
+<meta name="app-version" content="20261027190712">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -340,6 +340,7 @@ select { background: var(--fill); color: var(--accent); border: 0; border-radius
 .r-controls .main svg { width: 34px; height: 34px; }
 .r-modal { position: absolute; inset: 0; background: rgba(0,0,0,.4); display: grid; place-items: center; padding: 20px; z-index: 2; }
 .r-modal[hidden] { display: none; }
+.r-modal.fixed { position: fixed; z-index: 60; background: rgba(0,0,0,.55); }
 .r-modal .box { background: rgba(44,44,46,.94); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); color: #fff; border-radius: 14px; width: 270px; max-width: 100%; text-align: center; overflow: hidden; }
 .r-modal h2 { font-size: 17px; font-weight: 600; padding: 20px 16px 4px; }
 .r-modal p { color: rgba(235,235,245,.75); margin: 0; padding: 0 16px 18px; font-size: 13px; letter-spacing: 0; }
@@ -893,6 +894,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   <div class="r-modal" id="r-confirm" hidden><div class="box"><h2>Arrêter la séance ?</h2><p>Elle sera enregistrée dans l'historique.</p><div class="btns"><button class="btn" type="button" id="r-cont">Continuer</button><button class="btn" type="button" id="r-stop">Arrêter</button></div></div></div>
   <div class="r-modal" id="r-done" hidden><div class="box"><h2>Séance terminée</h2><p id="r-done-text"></p><div class="btns"><button class="btn" type="button" id="r-again">Recommencer</button><button class="btn" type="button" id="r-end">Fermer</button></div></div></div>
 </section>
+<div class="r-modal fixed" id="del-confirm" role="alertdialog" aria-modal="true" aria-labelledby="del-title" hidden><div class="box"><h2 id="del-title"></h2><p id="del-text"></p><div class="btns"><button class="btn" type="button" id="del-no">Annuler</button><button class="btn" type="button" id="del-yes" style="color:var(--red)">Supprimer</button></div></div></div>
 <section class="overlay" id="keypad" hidden>
   <div class="ed-head"><button type="button" id="kp-cancel">Annuler</button><h2>Durée</h2><button type="button" id="kp-ok">OK</button></div>
   <div class="kp-body">
@@ -1323,7 +1325,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       for (var i = 0; i < draft.sets; i++) if (i !== edSet) draft.cues[i] = clone(src);
       cqMeta(); toast('Copié vers toutes les séries');
     });
-    armed($('#cq-del'), function () { deleteTimer(); });
+    $('#cq-del').addEventListener('click', function () { confirmDelete('Supprimer ce minuteur ?', 'Le minuteur entier, avec toutes ses séries et leurs actions, sera supprimé définitivement.', deleteTimer); });
     armed($('#cq-clear'), function () {
       var m = cqMap(); Object.keys(m).forEach(function (k) { delete m[k]; });
       syncCues(true); toast('Actions effacées');
@@ -1520,6 +1522,18 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     refreshEditor(); syncCues(true);
     toast('Série S' + n + ' supprimée · ' + draft.sets + (draft.sets > 1 ? ' séries restantes' : ' série restante'));
   }
+  /* message de confirmation avant toute suppression, précédé d'un double bip d'avertissement (descendant) */
+  var delAction = null;
+  function confirmDelete(title, text, action) {
+    delAction = action;
+    $('#del-title').textContent = title; $('#del-text').textContent = text;
+    $('#del-confirm').hidden = false;
+    ensureAudio(); tone(880, 90, 0); tone(620, 160, 120);
+    vibrate(30);
+    try { $('#del-no').focus(); } catch (e) {}
+  }
+  $('#del-no').addEventListener('click', function () { delAction = null; $('#del-confirm').hidden = true; });
+  $('#del-yes').addEventListener('click', function () { var a = delAction; delAction = null; $('#del-confirm').hidden = true; if (a) a(); });
   function deleteTimer() {
     if (editingId) {
       workouts = workouts.filter(function (x) { return x.id !== editingId; });
@@ -1570,9 +1584,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     workouts.push(c); save('tempo.workouts', workouts); renderHome(); $('#editor').hidden = true; toast('Minuteur dupliqué');
   });
   $('#ed-delete').addEventListener('click', function () {
-    if (!deleteArmed) { deleteArmed = true; this.textContent = seriesMode() ? 'Confirmer' : 'Confirmer la suppression du minuteur'; return; }
-    if (seriesMode()) { deleteSeries(); return; }
-    deleteTimer();
+    if (seriesMode()) { var n = edSet + 1; confirmDelete('Supprimer la série S' + n + ' ?', 'Cette série et son programme d’actions seront supprimés ; les séries suivantes remontent.', deleteSeries); }
+    else confirmDelete('Supprimer ce minuteur ?', 'Le minuteur entier sera supprimé définitivement.', deleteTimer);
   });
 
   /* ---------- audio / feedback ---------- */
