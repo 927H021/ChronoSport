@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027063739">
+<meta name="app-version" content="20261027102811">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -695,6 +695,18 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 #r-cue .now { font-family: var(--fd); font-size: 40px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--ph); line-height: 44px; height: 44px; white-space: nowrap; overflow: hidden; }
 #r-cue .nxt { margin-top: 2px; height: 20px; line-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--fd); font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: rgba(235,235,245,.6); }
 @media (orientation: landscape) and (max-height: 520px) { #r-cue { margin-bottom: 4px; height: 44px; --cue-max: 26; } #r-cue .now { font-size: 26px; line-height: 28px; height: 28px; } #r-cue .nxt { font-size: 12px; height: 16px; line-height: 16px; } }
+/* verre bombé grossissant sur les affichages numériques (minuteur et chronomètre) */
+.dial-pill, .sw-time { position: relative; overflow: hidden; background: #0b0c0f !important; color: #f2f2ee !important; border: 1px solid rgba(255,255,255,.34); border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.5), inset 0 -3px 8px rgba(0,0,0,.65), inset 0 0 18px rgba(0,0,0,.5), 0 6px 14px -4px rgba(0,0,0,.85) !important;
+  text-shadow: 0 1px 0 rgba(0,0,0,.7), 0 0 10px rgba(255,255,255,.12); }
+.sw-time { width: fit-content; margin-left: auto; margin-right: auto; padding: 6px 28px; font-weight: 300; font-size: clamp(44px, 13vw, 60px); }
+.dial-pill { font-size: 38px; }
+.dial-pill::after, .sw-time::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background:
+    linear-gradient(158deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,.08) 34%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 74%, rgba(255,255,255,.07) 100%),
+    radial-gradient(130% 120% at 50% 0%, rgba(255,255,255,.12), rgba(255,255,255,0) 58%),
+    radial-gradient(80% 120% at 50% 50%, rgba(255,255,255,0) 55%, rgba(0,0,0,.45) 100%); }
+@media (orientation: landscape) and (max-height: 520px) { .sw-time { font-size: 40px; padding: 2px 20px; } .dial-pill { font-size: 32px; } }
 </style>
 
 <div class="views" id="views">
