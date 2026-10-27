@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027132910">
+<meta name="app-version" content="20261027182107">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -860,7 +860,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   <div class="ed-foot">
     <button class="btn" type="button" id="ed-start">Lancer</button>
     <button class="btn ghost" type="button" id="ed-dup" hidden>Dupliquer</button>
-    <button class="btn danger" type="button" id="ed-delete" hidden>Supprimer</button>
+    <button class="btn danger" type="button" id="ed-delete" hidden>Supprimer ce minuteur</button>
   </div>
 </section>
 
@@ -1518,7 +1518,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#ed-title').textContent = isEdit ? 'Modifier' : 'Nouveau minuteur';
     $('#ed-name').value = draft.name;
     $('#ed-delete').hidden = !isEdit; $('#ed-dup').hidden = !isEdit;
-    deleteArmed = false; $('#ed-delete').textContent = 'Supprimer';
+    deleteArmed = false; $('#ed-delete').textContent = 'Supprimer ce minuteur';
     buildEditorFields(); refreshEditor(); if (window.syncBeatUI) window.syncBeatUI(); cqToggleSync();
     $('#editor').hidden = false;
     syncWheels();
@@ -1552,7 +1552,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     workouts.push(c); save('tempo.workouts', workouts); renderHome(); $('#editor').hidden = true; toast('Minuteur dupliqué');
   });
   $('#ed-delete').addEventListener('click', function () {
-    if (!deleteArmed) { deleteArmed = true; this.textContent = 'Confirmer la suppression'; return; }
+    if (!deleteArmed) { deleteArmed = true; this.textContent = 'Confirmer la suppression du minuteur'; return; }
     workouts = workouts.filter(function (x) { return x.id !== editingId; });
     save('tempo.workouts', workouts); renderHome(); $('#editor').hidden = true; toast('Minuteur supprimé');
   });
