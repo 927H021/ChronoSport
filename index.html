@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027063101">
+<meta name="app-version" content="20261027063739">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -276,7 +276,7 @@ select { background: var(--fill); color: var(--accent); border: 0; border-radius
 .ed-head button { color: var(--accent); min-height: 44px; font-size: 17px; }
 #ed-cancel { justify-self: start; }
 #ed-save { justify-self: end; font-weight: 600; }
-.ed-body { flex: 1; min-height: 0; overflow-y: auto; max-width: 640px; width: 100%; margin: 0 auto; padding-bottom: 16px; }
+.ed-body { overflow-anchor: none; flex: 1; min-height: 0; overflow-y: auto; max-width: 640px; width: 100%; margin: 0 auto; padding-bottom: 16px; }
 .name-in { display: block; width: 100%; background: var(--surface); border: 0; border-radius: 12px; color: var(--fg); font: inherit; letter-spacing: inherit; padding: 13px 16px; margin: 8px 0 20px; }
 .name-in::placeholder { color: var(--muted); }
 .field { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 12px 6px 16px; }
@@ -1316,7 +1316,12 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   })();
   function setField(f, v) {
     v = Math.min(f[4], Math.max(f[3], v));
-    draft[f[0]] = v; refreshEditor();
+    draft[f[0]] = v;
+    /* la position de la page ne doit jamais bouger quand une valeur change (le tableau d'actions est reconstruit) */
+    var bd = $('.ed-body'), top = bd.scrollTop;
+    refreshEditor();
+    bd.scrollTop = top;
+    requestAnimationFrame(function () { bd.scrollTop = top; });
   }
   /* Glissement piloté au doigt : une molette sélectionnée garde le geste pour elle (touch-action: none), la page
      ne défile donc jamais en dessous. Inertie puis calage sur le cran le plus proche. */
@@ -1353,44 +1358,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     }
     list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
   }
-  /* Glissement d'une molette sélectionnée, piloté à la main : le doigt ne fait jamais défiler la page en même temps
-     (touch-action: none), avec inertie puis calage sur le cran le plus proche. */
-  function dragWheel(list, H) {
-    var id = null, y0 = 0, t0 = 0, last = [], raf = 0;
-    function stop() { cancelAnimationFrame(raf); raf = 0; }
-    function max() { return list.scrollHeight - list.clientHeight; }
-    function glide(to, ms) {
-      stop();
-      var from = list.scrollTop, t = performance.now();
-      to = Math.max(0, Math.min(max(), Math.round(to / H) * H));
-      function f(now) {
-        var k = Math.min(1, (now - t) / ms), e = 1 - Math.pow(1 - k, 3);
-        list.scrollTop = from + (to - from) * e;
-        if (k < 1) raf = requestAnimationFrame(f); else { raf = 0; list.style.scrollSnapType = ''; list.scrollTop = to; }
-      }
-      raf = requestAnimationFrame(f);
-    }
-    list.addEventListener('pointerdown', function (e) {
-      if (id !== null) return;
-      stop(); id = e.pointerId; y0 = e.clientY; t0 = list.scrollTop; last = [[e.timeStamp, e.clientY]];
-      list.style.scrollSnapType = 'none';
-      try { list.setPointerCapture(id); } catch (x) {}
-    });
-    list.addEventListener('pointermove', function (e) {
-      if (e.pointerId !== id) return;
-      list.scrollTop = t0 - (e.clientY - y0);
-      last.push([e.timeStamp, e.clientY]); if (last.length > 6) last.shift();
-      e.preventDefault();
-    });
-    function end(e) {
-      if (e.pointerId !== id) return;
-      id = null;
-      var a = last[0], b = last[last.length - 1], v = 0;
-      if (a && b && b[0] > a[0] && e.timeStamp - b[0] < 90) v = (a[1] - b[1]) / (b[0] - a[0]);   /* px/ms, vers le bas = positif */
-      glide(list.scrollTop + v * 240, 100 + Math.min(320, Math.abs(v) * 260));
-    }
-    list.addEventListener('pointerup', end); list.addEventListener('pointercancel', end);
-  }
   /* Molette verticale (même modèle que « Toutes les (secondes) » du son répété) : une liste d'entiers consécutifs
      à partir de `lo`, un cran de 28 px par valeur, un clic de cliquet à chaque cran. */
   function makeWheel(id, label, lo, hi, unit, onPick, pad) {
@@ -1399,7 +1366,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     box.setAttribute('aria-valuemin', lo); box.setAttribute('aria-valuemax', hi);
     if (unit) box.setAttribute('data-unit', unit); else box.classList.add('nounit');
     for (var q = lo; q <= hi; q++) list.appendChild(el('div', null, pad && q < 10 ? '0' + q : String(q)));
-    box.appendChild(band); box.appendChild(list); dragWheel(list, H);
+    box.appendChild(band); box.appendChild(list);
     dragWheel(list, H, function () { return !!box.closest('.armed'); });
     var hl = -1, quiet = false, qt = 0, wt = 0, val = lo, lock = 0, tok = 0;
     function idx() { return Math.max(0, Math.min(hi - lo, Math.round(list.scrollTop / H))); }
@@ -1805,7 +1772,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       wheelSet(b.every);
     };
     var wl0 = $('#bt-wlist');
-    armable($('#bt-every')); dragWheel($('#bt-wlist'), 28);
+    armable($('#bt-every'));
     dragWheel(wl0, 28, function () { return $('#bt-every').classList.contains('armed'); });
     var WV = [], wl = $('#bt-wlist'), wt = 0, H = 28;
     for (var q = 1; q <= 300; q++) WV.push(q);
