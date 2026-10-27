@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027184450">
+<meta name="app-version" content="20261027185547">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1062,9 +1062,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   /* ---------- editor ---------- */
   var FIELDS = [
     ['prep', 'Préparation', 'time', 0, 3599, 'prep', "Compte à rebours avant le début"],
-    ['work', 'Effort', 'time', 1, 3599, 'work', "Durée de chaque effort"],
+    ['work', 'Entraînement', 'time', 1, 3599, 'work', "Durée de chaque entraînement"],
     ['rest', 'Repos', 'time', 0, 3599, 'rest', "Pause entre deux séries"],
-    ['sets', 'Séries', 'count', 1, 99, null, "Nombre d'efforts par cycle"],
+    ['sets', 'Séries', 'count', 1, 99, null, "Nombre d'entraînements par cycle"],
     ['cycles', 'Cycles', 'count', 1, 99, null, "Nombre de fois où l'on enchaîne les séries"],
     ['cycleRest', 'Repos entre cycles', 'time', 0, 3599, 'between', "Pause entre deux cycles"],
     ['cool', 'Retour au calme', 'time', 0, 3599, 'cool', "Récupération à la fin de la séance"]
@@ -1509,7 +1509,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var b = $('#ed-delete'); if (!b || !draft) return;
     deleteArmed = false;
     b.hidden = !editingId && !seriesMode();
-    b.textContent = seriesMode() ? 'Supprimer la série S' + (edSet + 1) : 'Supprimer ce minuteur';
+    b.textContent = seriesMode() ? 'Supprimer' : 'Supprimer ce minuteur';
   }
   function deleteSeries() {
     if (!seriesMode()) return;
@@ -1570,7 +1570,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     workouts.push(c); save('tempo.workouts', workouts); renderHome(); $('#editor').hidden = true; toast('Minuteur dupliqué');
   });
   $('#ed-delete').addEventListener('click', function () {
-    if (!deleteArmed) { deleteArmed = true; this.textContent = seriesMode() ? 'Confirmer : supprimer la série S' + (edSet + 1) : 'Confirmer la suppression du minuteur'; return; }
+    if (!deleteArmed) { deleteArmed = true; this.textContent = seriesMode() ? 'Confirmer' : 'Confirmer la suppression du minuteur'; return; }
     if (seriesMode()) { deleteSeries(); return; }
     deleteTimer();
   });
