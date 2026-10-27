@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027190712">
+<meta name="app-version" content="20261027191103">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1533,7 +1533,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     try { $('#del-no').focus(); } catch (e) {}
   }
   $('#del-no').addEventListener('click', function () { delAction = null; $('#del-confirm').hidden = true; });
-  $('#del-yes').addEventListener('click', function () { var a = delAction; delAction = null; $('#del-confirm').hidden = true; if (a) a(); });
+  $('#del-yes').addEventListener('click', function () { var a = delAction; delAction = null; $('#del-confirm').hidden = true; ensureAudio(); tone(520, 70, 0); tone(390, 70, 75); tone(240, 220, 150); vibrate([20, 40, 20]); if (a) a(); });
   function deleteTimer() {
     if (editingId) {
       workouts = workouts.filter(function (x) { return x.id !== editingId; });
