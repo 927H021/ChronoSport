@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261027132303">
+<meta name="app-version" content="20261027132910">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -850,6 +850,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       </div>
       <div class="cq-count" id="cq-count"></div>
       <div class="row" id="cq-copy-row"><span class="lbl">Copier cette série vers toutes les séries</span><button class="btn ghost" type="button" id="cq-copy">Copier</button></div>
+      <div class="row" id="cq-del-row"><span class="lbl">Supprimer cette série<small id="cq-del-sub"></small></span><button class="btn danger" type="button" id="cq-del">Supprimer</button></div>
       <div class="row"><span class="lbl">Effacer les actions<small id="cq-clear-sub"></small></span><button class="btn danger" type="button" id="cq-clear">Effacer</button></div>
     </div>
     <div class="foot">À la seconde indiquée de l'effort, l'action s'affiche à l'écran et, si l'annonce vocale est active, elle est lue à voix haute. Touchez une action rapide pour la placer sur la seconde sélectionnée (une 2<sup>e</sup> touche ajoute « / » pour enchaîner). Les boutons rapides se modifient dans Réglages &gt; Actions rapides. Pour sélectionner un bloc : touchez le numéro de sa première seconde, puis celui de sa dernière. « Boucle » reproduit ce bloc sélectionné (actions et lignes vides), dans le même ordre, à la suite de lui jusqu'à la fin de l'effort. Pour le copier ailleurs : « Copier », puis sélectionnez la seconde de destination et touchez « Coller ». « Insérer » ajoute, avant la sélection, autant de secondes vides que la sélection en compte : les actions suivantes sont décalées vers le bas et la durée de l'effort ne change pas (les actions qui dépassent la fin sont supprimées).</div>
@@ -1133,6 +1134,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#cq-same-row').hidden = !(draft.sets > 1);
     $('#cq-series-wrap').hidden = shared;
     $('#cq-copy-row').hidden = shared;
+    $('#cq-del-row').hidden = shared || draft.sets < 2;
+    $('#cq-del-sub').textContent = 'Retire uniquement la série ' + (edSet + 1) + ' du minuteur ; les suivantes remontent';
     if (key === cqKey && !force) { cqMeta(); return; }
     var ser = $('#cq-series');
     if (!shared) {
@@ -1320,6 +1323,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       var src = cqMap();
       for (var i = 0; i < draft.sets; i++) if (i !== edSet) draft.cues[i] = clone(src);
       cqMeta(); toast('Copié vers toutes les séries');
+    });
+    armed($('#cq-del'), function () {
+      if (draft.sets < 2) return;
+      var n = edSet + 1;
+      draft.cues.splice(edSet, 1); draft.sets--;
+      if (edSet >= draft.sets) edSet = draft.sets - 1;
+      cqFocus = 0; cqSel = null;
+      refreshEditor(); syncCues(true);
+      toast('Série ' + n + ' supprimée · ' + draft.sets + (draft.sets > 1 ? ' séries restantes' : ' série restante'));
     });
     armed($('#cq-clear'), function () {
       var m = cqMap(); Object.keys(m).forEach(function (k) { delete m[k]; });
