@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261028201937">
+<meta name="app-version" content="20261028202223">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1505,10 +1505,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       /* translation (et non « top ») : suit le décalage d'iOS sans recalculer la mise en page à chaque image */
       ed.style.top = '';
       ed.style.height = vvKb ? vv.height + 'px' : '';
-      /* pendant l'animation du clavier, iOS annonce un décalage provisoire qui fait sauter l'écran si on le suit :
-         on ne tient compte du décalage qu'une fois le clavier stabilisé */
+      /* la hauteur suit la zone visible ; le décalage annoncé par iOS est ignoré (il faisait sauter l'écran) */
       if (quiet === true) return;
-      ed.style.transform = (vvKb && vv.offsetTop > 1) ? 'translate3d(0,' + vv.offsetTop + 'px,0)' : '';
+      /* aucun décalage vertical appliqué : l'éditeur reste calé en haut de l'écran (suivre vv.offsetTop le faisait descendre) */
+      ed.style.transform = '';
       var st = $('#cq-sticky'), body = $('.ed-body');
       if (body) body.style.scrollPaddingTop = ((st && st.offsetParent ? st.offsetHeight : 0) + 6) + 'px';
       var a = document.activeElement;
