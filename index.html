@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261028201246">
+<meta name="app-version" content="20261028201525">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -16,6 +16,9 @@
 <style>
 [hidden]{display:none!important}
 html.ed-open, html.ed-open body { overflow: hidden !important; overscroll-behavior: none; }
+html.ed-open, html.ed-open body { background: var(--bg) !important; }
+/* fond plein sous l'éditeur : la page d'accueil ne transparaît plus derrière la barre du clavier */
+#editor.kb::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 700px; background: var(--bg); pointer-events: none; }
 html, body, button, #runner, .r-controls { touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 #runner { -webkit-user-select: none; user-select: none; }
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
