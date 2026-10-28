@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261028200534">
+<meta name="app-version" content="20261028201032">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1491,22 +1491,36 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     ['pointerup', 'pointercancel'].forEach(function (t) {
       window.addEventListener(t, function () { if (pressing) { pressing = false; setTimeout(fitEditor, 80); } }, true);
     });
-    fitEditor = function () {
-      if (ed.hidden) { ed.classList.remove('kb'); ed.style.top = ''; ed.style.height = ''; return; }
+    var tracking = false;
+    fitEditor = function (quiet) {
+      if (ed.hidden) { ed.classList.remove('kb'); ed.style.top = ''; ed.style.transform = ''; ed.style.height = ''; return; }
       if (pressing) return;
       var vvKb = !!vv && vv.height < window.innerHeight - 100;
       ed.classList.toggle('kb', vvKb || typing());
-      ed.style.top = vvKb ? vv.offsetTop + 'px' : '';
+      /* translation (et non « top ») : suit le décalage d'iOS sans recalculer la mise en page à chaque image */
+      ed.style.top = '';
+      ed.style.transform = (vvKb && vv.offsetTop) ? 'translate3d(0,' + vv.offsetTop + 'px,0)' : '';
       ed.style.height = vvKb ? vv.height + 'px' : '';
+      if (quiet === true) return;
       var st = $('#cq-sticky'), body = $('.ed-body');
       if (body) body.style.scrollPaddingTop = ((st && st.offsetParent ? st.offsetHeight : 0) + 6) + 'px';
       var a = document.activeElement;
       if (a && a.classList && a.classList.contains('cq-in')) revealRow(a);
     };
-    if (vv) { vv.addEventListener('resize', fitEditor); vv.addEventListener('scroll', fitEditor); }
+    /* pendant l'animation du clavier, la zone visible change à chaque image : on la suit image par image
+       (au lieu de quelques mises à jour espacées qui donnaient l'impression que l'écran sautait) */
+    function track() {
+      if (tracking) return; tracking = true;
+      var t0 = Date.now();
+      (function frame() {
+        fitEditor(true);
+        if (Date.now() - t0 < 900) requestAnimationFrame(frame); else { tracking = false; fitEditor(); }
+      })();
+    }
+    if (vv) { vv.addEventListener('resize', track); vv.addEventListener('scroll', function () { fitEditor(true); }); }
     window.addEventListener('orientationchange', function () { setTimeout(fitEditor, 300); });
-    ed.addEventListener('focusin', function () { fitEditor(); setTimeout(fitEditor, 120); setTimeout(fitEditor, 400); });
-    ed.addEventListener('focusout', function () { setTimeout(fitEditor, 150); });
+    ed.addEventListener('focusin', function () { track(); });
+    ed.addEventListener('focusout', function () { setTimeout(track, 100); });
   })();
   var deleteArmed = false;
   /* Bouton du bas : supprime uniquement la série sélectionnée (S1…Sn) quand les séries ont chacune leur programme ;
