@@ -2,8 +2,8 @@
 <html lang="fr" data-theme="dark">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261028090126">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="app-version" content="20261028200534">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,6 +15,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <style>
 [hidden]{display:none!important}
+html, body, button, #runner, .r-controls { touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
+#runner { -webkit-user-select: none; user-select: none; }
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 </style>
 <script>
@@ -2764,6 +2766,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   ['pointerdown', 'touchend', 'keydown'].forEach(function (ev) { document.addEventListener(ev, lazyAudio, true); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) { lazyAudio(); dialTick(); swTick(); if (run) tick(); keepAliveCheck(); } });
 
+
+  /* Empêche le zoom de la page par pincement (le double appui est déjà bloqué par touch-action: manipulation). */
+  (function () {
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) { document.addEventListener(ev, function (e) { e.preventDefault(); }); });
+  })();
   /* ---------- init ---------- */
   applyTheme(); syncSettings(); renderQuickSettings(); renderHome(); renderHistory(); buildDial(); buildKeypad(); buildSWDial(); buildRunnerTrack(); restoreLive(); renderDial(); renderSW();
 
