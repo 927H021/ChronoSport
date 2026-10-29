@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261029194018">
+<meta name="app-version" content="20261029194506">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -636,6 +636,9 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   #v-dial > .mode button { font-size: 13px; letter-spacing: .04em; padding: 0 6px; }
   #v-dial > .mode, #v-dial .dial-title, #v-dial .dial-sub { align-self: center; }
   .sw-time { font-size: 46px; }
+  /* le chronomètre ne doit jamais chevaucher le sélecteur de mode (écrans bas, ex. Android) */
+  #v-dial { grid-template-rows: repeat(5, auto); }
+  #v-dial .dial { grid-row: 1 / span 5; }
   .r-top { display: contents; }
   .r-top button { position: absolute; top: 6px; left: max(10px, env(safe-area-inset-left, 0px)); z-index: 2; }
   .r-spacer { display: none; }
@@ -717,6 +720,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     radial-gradient(130% 120% at 50% 0%, rgba(255,255,255,.12), rgba(255,255,255,0) 58%),
     radial-gradient(80% 120% at 50% 50%, rgba(255,255,255,0) 55%, rgba(0,0,0,.45) 100%); }
 @media (orientation: landscape) and (max-height: 520px) { .sw-time { font-size: 40px; padding: 2px 20px; } .dial-pill { font-size: 32px; } }
+@media (orientation: landscape) and (max-height: 345px) { #v-dial > .mode { margin-bottom: 2px; } .sw-time { font-size: 36px !important; padding: 0 16px; margin-bottom: 2px; } }
 /* pas de barre de défilement visible (Android) : le défilement reste actif */
 .views, .ed-body, .cq-pills, #sw-laps, .kp-body, .overlay { scrollbar-width: none; -ms-overflow-style: none; }
 .views::-webkit-scrollbar, .ed-body::-webkit-scrollbar, .cq-pills::-webkit-scrollbar, #sw-laps::-webkit-scrollbar, .kp-body::-webkit-scrollbar, .overlay::-webkit-scrollbar { display: none; width: 0; height: 0; }
