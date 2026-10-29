@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261029095559">
+<meta name="app-version" content="20261029100427">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1298,7 +1298,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     Array.prototype.forEach.call(sec.children, function (c) { if (c !== tt && c !== tg) c.hidden = !on; });
     if (on) { cqKey = ''; syncCues(true); }
   }
-  $('#cq-on').addEventListener('change', function () { draft.cuesOn = this.checked; cqToggleSync(); });
+  $('#cq-on').addEventListener('change', function () { draft.cuesOn = this.checked; cqToggleSync(); syncDeleteBtn(); });
   /* boutons rapides : lus dans les réglages (settings.quick) */
   function buildQuick() {
     var sg = $('#cq-sugg'); sg.textContent = '';
@@ -1556,7 +1556,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   var deleteArmed = false;
   /* Bouton du bas : supprime uniquement la série sélectionnée (S1…Sn) quand les séries ont chacune leur programme ;
      sinon il supprime le minuteur. La ligne « Supprimer ce minuteur » du tableau supprime toujours le minuteur entier. */
-  function seriesMode() { return !!draft && !cqShared() && draft.sets > 1 && !$('#cq-section').hidden; }
+  function seriesMode() {
+    if (!draft || cqShared() || draft.sets <= 1 || $('#cq-section').hidden) return false;
+    var on = draft.cuesOn != null ? !!draft.cuesOn : cueTotal(draft) > 0;   /* interrupteur « Actions » du minuteur désactivé : le bouton supprime le minuteur */
+    return on;
+  }
   function syncDeleteBtn() {
     var b = $('#ed-delete'); if (!b || !draft) return;
     deleteArmed = false;
