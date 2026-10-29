@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261029100923">
+<meta name="app-version" content="20261029101537">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -284,7 +284,7 @@ select { background: var(--fill); color: var(--accent); border: 0; border-radius
 .ed-head button { color: var(--accent); min-height: 44px; font-size: 17px; }
 #ed-cancel { justify-self: start; }
 #ed-save { justify-self: end; font-weight: 600; }
-.ed-body { overflow-anchor: none; flex: 1; min-height: 0; overflow-y: auto; max-width: 640px; width: 100%; margin: 0 auto; padding-bottom: 16px; }
+.ed-body { padding-bottom: 55vh !important; overflow-anchor: none; flex: 1; min-height: 0; overflow-y: auto; max-width: 640px; width: 100%; margin: 0 auto; padding-bottom: 16px; }
 .name-in { display: block; width: 100%; background: var(--surface); border: 0; border-radius: 12px; color: var(--fg); font: inherit; letter-spacing: inherit; padding: 13px 16px; margin: 8px 0 20px; }
 .name-in::placeholder { color: var(--muted); }
 .field { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 12px 6px 16px; }
@@ -1554,7 +1554,17 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     new MutationObserver(function () { fitEditor(true); }).observe(ed, { attributes: true, attributeFilter: ['hidden'] });
     if (vv) { vv.addEventListener('resize', track); vv.addEventListener('scroll', function () { fitEditor(true); pin(); }); }
     window.addEventListener('orientationchange', function () { setTimeout(fitEditor, 300); });
-    ed.addEventListener('focusin', function () { track(); });
+    /* avant que le clavier n'apparaisse, la ligne touchée est remontée en haut de la zone qui restera visible :
+       iOS n'a alors plus besoin de faire défiler la page (c'était la cause du grand saut quand on touche une ligne située en bas) */
+    function prescroll(a) {
+      if (!a || a.tagName !== 'INPUT' || a.type !== 'text') return;
+      var body = $('.ed-body'), st = $('#cq-sticky');
+      if (!body || !body.contains(a)) return;
+      var r = a.getBoundingClientRect(), br = body.getBoundingClientRect();
+      var topLine = (st && st.offsetParent) ? st.getBoundingClientRect().bottom + 8 : br.top + 8;
+      if (r.bottom > window.innerHeight * 0.4 || r.top < topLine) body.scrollTop += r.top - topLine;
+    }
+    ed.addEventListener('focusin', function (e) { prescroll(e.target); track(); });
     ed.addEventListener('focusout', function () { setTimeout(track, 100); });
   })();
   var deleteArmed = false;
