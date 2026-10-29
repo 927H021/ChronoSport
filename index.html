@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261029101537">
+<meta name="app-version" content="20261029101741">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1535,7 +1535,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       /* iOS annonce le décalage final avant que l'écran l'ait atteint : on applique la valeur d'il y a deux images */
       var cur = (vv && !ed.hidden && !pressing) ? Math.round(vv.offsetTop) : 0;
       offHist.push(cur); if (offHist.length > 3) offHist.shift();
-      var off = offHist[0];
+      var off = cur;   /* essai du retard de deux images : il aggravait les sauts au changement de ligne, abandonné */
       ed.style.transform = off ? 'translate3d(0,' + off + 'px,0)' : '';
     }
     function track() {
