@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261029100427">
+<meta name="app-version" content="20261029100649">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1564,7 +1564,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function syncDeleteBtn() {
     var b = $('#ed-delete'); if (!b || !draft) return;
     deleteArmed = false;
-    b.hidden = !editingId && !seriesMode();
+    b.hidden = false;
     b.textContent = seriesMode() ? 'Supprimer' : 'Supprimer ce minuteur';
   }
   function deleteSeries() {
@@ -1639,7 +1639,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   });
   $('#ed-delete').addEventListener('click', function () {
     if (seriesMode()) { var n = edSet + 1; confirmDelete('Supprimer la série S' + n + ' ?', 'Cette série et son programme d’actions seront supprimés ; les séries suivantes remontent.', deleteSeries); }
-    else confirmDelete('Supprimer ce minuteur ?', 'Le minuteur entier sera supprimé définitivement.', deleteTimer);
+    else confirmDelete('Supprimer ce minuteur ?', editingId ? 'Le minuteur entier sera supprimé définitivement.' : 'Ce nouveau minuteur sera abandonné sans être enregistré.', deleteTimer);
   });
 
   /* ---------- audio / feedback ---------- */
