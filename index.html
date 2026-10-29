@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261028202223">
+<meta name="app-version" content="20261029094418">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1127,7 +1127,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       if (e.key !== 'Enter') return;
       e.preventDefault();
       var nx = row.nextElementSibling, ni = nx && nx.querySelector('input');
-      if (ni) ni.focus(); else inp.blur();
+      if (ni) { try { ni.focus({ preventScroll: true }); } catch (x) { ni.focus(); } } else inp.blur();
     });
     var x = el('button', 'cq-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Effacer la seconde ' + sec);
     x.addEventListener('click', function () { inp.value = ''; cqSet(m, sec, '', row); });
@@ -1508,7 +1508,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       /* la hauteur suit la zone visible ; le décalage annoncé par iOS est ignoré (il faisait sauter l'écran) */
       if (quiet === true) return;
       /* aucun décalage vertical appliqué : l'éditeur reste calé en haut de l'écran (suivre vv.offsetTop le faisait descendre) */
-      ed.style.transform = '';
       var st = $('#cq-sticky'), body = $('.ed-body');
       if (body) body.style.scrollPaddingTop = ((st && st.offsetParent ? st.offsetHeight : 0) + 6) + 'px';
       var a = document.activeElement;
@@ -1516,6 +1515,10 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     };
     /* pendant l'animation du clavier, la zone visible change à chaque image : on la suit image par image
        (au lieu de quelques mises à jour espacées qui donnaient l'impression que l'écran sautait) */
+    function pin() {
+      var off = (vv && !ed.hidden && !pressing) ? Math.round(vv.offsetTop * 2) / 2 : 0;
+      ed.style.transform = off ? 'translate3d(0,' + off + 'px,0)' : '';
+    }
     function track() {
       if (tracking) return; tracking = true;
       var t0 = Date.now();
@@ -1523,11 +1526,14 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
         /* iOS fait défiler la page elle-même pour montrer le champ : on la remet en haut, l'éditeur gère seul le décalage */
         if (window.scrollY || window.pageYOffset) window.scrollTo(0, 0);
         fitEditor(true);
-        if (Date.now() - t0 < 900) requestAnimationFrame(frame); else { tracking = false; fitEditor(); }
+        pin();
+        /* tant qu'on saisit, on reste branché image par image : iOS décale brièvement la zone visible (y compris vers le haut)
+           quand le focus passe d'une ligne à l'autre ; on annule ce décalage dans la même image */
+        if (Date.now() - t0 < 900 || typing()) requestAnimationFrame(frame); else { tracking = false; fitEditor(); pin(); }
       })();
     }
     new MutationObserver(function () { fitEditor(true); }).observe(ed, { attributes: true, attributeFilter: ['hidden'] });
-    if (vv) { vv.addEventListener('resize', track); vv.addEventListener('scroll', function () { fitEditor(true); }); }
+    if (vv) { vv.addEventListener('resize', track); vv.addEventListener('scroll', function () { fitEditor(true); pin(); }); }
     window.addEventListener('orientationchange', function () { setTimeout(fitEditor, 300); });
     ed.addEventListener('focusin', function () { track(); });
     ed.addEventListener('focusout', function () { setTimeout(track, 100); });
