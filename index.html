@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261029095422">
+<meta name="app-version" content="20261029095559">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -19,6 +19,7 @@ html.ed-open, html.ed-open body { overflow: hidden !important; overscroll-behavi
 html.ed-open, html.ed-open body { background: var(--bg) !important; }
 html.ed-open body { position: fixed; left: 0; right: 0; width: 100%; }  /* page figée : iOS ne peut plus la faire défiler ni rebondir quand le focus change */
 /* fond plein sous l'éditeur : la page d'accueil ne transparaît plus derrière la barre du clavier */
+#editor.kb::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: 600px; background: var(--bg); pointer-events: none; }
 #editor.kb::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 700px; background: var(--bg); pointer-events: none; }
 html, body, button, #runner, .r-controls { touch-action: manipulation; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; }
 #runner { -webkit-user-select: none; user-select: none; }
@@ -1496,22 +1497,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     ['pointerup', 'pointercancel'].forEach(function (t) {
       window.addEventListener(t, function () { if (pressing) { pressing = false; setTimeout(fitEditor, 80); } }, true);
     });
-    /* TEMPORAIRE (diagnostic) : affiche les mesures du clavier dans l'éditeur pour comprendre le saut */
-    (function () {
-      var d = document.createElement('div');
-      d.style.cssText = 'position:fixed;left:2px;top:3px;z-index:99;font:9px/1.2 monospace;color:#0f0;background:rgba(0,0,0,.75);padding:2px 4px;pointer-events:none;white-space:pre';
-      document.body.appendChild(d);
-      var pk = { o: 0, s: 0, e: 0, p: 0, mn: 0, mx: 0 };
-      (function loop() {
-        if (!ed.hidden && vv) { pin();
-          var r = ed.getBoundingClientRect(), se = document.scrollingElement || document.documentElement;
-          pk.o = Math.max(pk.o, Math.abs(vv.offsetTop)); pk.mn = Math.min(pk.mn, vv.offsetTop); pk.mx = Math.max(pk.mx, vv.offsetTop); pk.s = Math.max(pk.s, Math.abs(se.scrollTop + window.scrollY)); pk.e = Math.max(pk.e, Math.abs(r.top)); pk.p = Math.max(pk.p, Math.abs(vv.pageTop));
-          d.textContent = 'vv.off ' + vv.offsetTop.toFixed(1) + ' pageTop ' + vv.pageTop.toFixed(1) + ' h ' + vv.height.toFixed(0) + '/' + window.innerHeight + '\nscrollY ' + window.scrollY + ' se ' + se.scrollTop + ' ed.top ' + r.top.toFixed(1) + ' ed.h ' + r.height.toFixed(0) + '\nmin ' + pk.mn.toFixed(0) + ' max ' + pk.mx.toFixed(0) + ' peak off ' + pk.o + ' scr ' + pk.s + ' edtop ' + pk.e.toFixed(1) + ' pg ' + pk.p;
-          d.hidden = false;
-        } else { d.hidden = true; }
-        requestAnimationFrame(loop);
-      })();
-    })();
     var locked = false, lockY = 0;
     function lockPage() {
       if (locked) return; locked = true;
