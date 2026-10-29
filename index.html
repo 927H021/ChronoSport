@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261029102030">
+<meta name="app-version" content="20261029194018">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -284,7 +284,8 @@ select { background: var(--fill); color: var(--accent); border: 0; border-radius
 .ed-head button { color: var(--accent); min-height: 44px; font-size: 17px; }
 #ed-cancel { justify-self: start; }
 #ed-save { justify-self: end; font-weight: 600; }
-.ed-body { padding-bottom: 55vh !important; overflow-anchor: none; flex: 1; min-height: 0; overflow-y: auto; max-width: 640px; width: 100%; margin: 0 auto; padding-bottom: 16px; }
+.ed-body::after { content: ''; display: block; height: 55vh; }  /* marge de défilement pour remonter la ligne active ; hors du padding, sinon la barre collante Copier/Coller remonte aussi */
+.ed-body { overflow-anchor: none; flex: 1; min-height: 0; overflow-y: auto; max-width: 640px; width: 100%; margin: 0 auto; padding-bottom: 16px; }
 .name-in { display: block; width: 100%; background: var(--surface); border: 0; border-radius: 12px; color: var(--fg); font: inherit; letter-spacing: inherit; padding: 13px 16px; margin: 8px 0 20px; }
 .name-in::placeholder { color: var(--muted); }
 .field { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 12px 6px 16px; }
