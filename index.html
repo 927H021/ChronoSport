@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261029101741">
+<meta name="app-version" content="20261029102030">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1519,7 +1519,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       ed.classList.toggle('kb', vvKb || typing());
       /* translation (et non « top ») : suit le décalage d'iOS sans recalculer la mise en page à chaque image */
       ed.style.top = '';
-      ed.style.height = vvKb ? vv.height + 'px' : '';
+      ed.style.height = '';   /* l'éditeur garde toute la hauteur : le clavier recouvre simplement le bas, la ligne active est gardée en haut (plus aucun redimensionnement pendant l'animation) */
       /* la hauteur suit la zone visible ; le décalage annoncé par iOS est ignoré (il faisait sauter l'écran) */
       if (quiet === true) return;
       /* aucun décalage vertical appliqué : l'éditeur reste calé en haut de l'écran (suivre vv.offsetTop le faisait descendre) */
@@ -1533,7 +1533,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var offHist = [];
     function pin() {
       /* iOS annonce le décalage final avant que l'écran l'ait atteint : on applique la valeur d'il y a deux images */
-      var cur = (vv && !ed.hidden && !pressing) ? Math.round(vv.offsetTop) : 0;
+      var cur = 0;   /* plus de compensation : l'éditeur n'est plus redimensionné, iOS n'a pas de raison de décaler la page */
       offHist.push(cur); if (offHist.length > 3) offHist.shift();
       var off = cur;   /* essai du retard de deux images : il aggravait les sauts au changement de ligne, abandonné */
       ed.style.transform = off ? 'translate3d(0,' + off + 'px,0)' : '';
