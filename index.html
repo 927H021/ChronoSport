@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261030193646">
+<meta name="app-version" content="20261030194044">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -659,19 +659,19 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
 /* ---- actions seconde par seconde : éditeur en tableau ---- */
 .cq-pad { padding: 10px 12px 0; }
-.cq-pills { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 10px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.cq-pills { display: flex; gap: 6px; overflow-x: auto; padding: 8px 6px 12px; margin: -6px -6px 0; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .cq-pill { flex: none; min-width: 46px; min-height: 38px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-family: var(--fd); font-size: 17px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; touch-action: manipulation; white-space: nowrap; }
 .cq-pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.cq-pill.drag { transform: scale(1.14); box-shadow: 0 6px 16px rgba(0,0,0,.45), inset 0 0 0 1px var(--accent); position: relative; z-index: 2; transition: none; -webkit-user-select: none; user-select: none; }
+.cq-pill.drag { transform: scale(1.3); background: var(--surface); border-color: var(--accent); color: var(--accent); box-shadow: 0 6px 16px rgba(0,0,0,.45), inset 0 0 0 1px var(--accent); position: relative; z-index: 2; transition: none; -webkit-user-select: none; user-select: none; }
 #cq-series .cq-pill { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .cq-pill.dropped { animation: cqDrop 1.1s ease-out; }
-@keyframes cqDrop { 0% { background: #fff; color: #000; border-color: #fff; box-shadow: 0 0 18px 4px rgba(255,255,255,.75); transform: scale(1.18); } 35% { transform: scale(1.06); } 100% { background: var(--bg); transform: none; } }
+@keyframes cqDrop { 0% { background: #fff; color: #000; border-color: #fff; box-shadow: 0 0 18px 4px rgba(255,255,255,.75); transform: scale(1.3); } 40% { transform: scale(1.12); } 100% { background: var(--bg); transform: none; } }
 .cq-pill.has::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: 6px; vertical-align: middle; }
 .cq-sugg .cq-pill { min-height: 34px; font-size: 15px; text-transform: none; letter-spacing: .02em; font-family: var(--f); font-weight: 500; }
 /* l'en-tête (séries, boutons rapides, titres) reste collé en haut de l'éditeur pendant le défilement du tableau */
 .cq-sticky { position: sticky; top: 0; z-index: 3; background: var(--surface); box-shadow: 0 6px 12px rgba(0, 0, 0, .18); }
 .cq-sticky .cq-pad { padding-top: 8px; }
-.cq-sticky .cq-pills { padding-bottom: 8px; }
+.cq-sticky .cq-pills { padding-bottom: 10px; }
 .cq-table { min-height: 44px; }
 .cq-hd { position: static; display: flex; gap: 8px; background: var(--surface); border-bottom: 1px solid var(--line); padding: 6px 8px 6px 3px; font-family: var(--fd); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .cq-hd span:first-child { flex: none; width: 64px; text-align: right; padding-right: 8px; }
