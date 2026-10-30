@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261030195711">
+<meta name="app-version" content="20261030200625">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -178,9 +178,8 @@ h1, h2 { margin: 0; text-wrap: balance; }
 
 /* ---------- workout list ---------- */
 #list .item { touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-#list .item.swipe::before { content: 'Supprimer'; position: absolute; right: 100%; top: 0; bottom: 0; width: 100%; background: var(--red); color: #fff; display: flex; align-items: center; justify-content: flex-end; padding-right: 18px; box-sizing: border-box; font-family: var(--fd); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-#list .item.lift { background: var(--surface); box-shadow: 0 10px 26px rgba(0,0,0,.55), inset 0 0 0 1px var(--accent); z-index: 5; transition: none; }
-#list .item.shift { animation: cqBlink .7s steps(1, end); }
+#list .item.swipe::before { content: 'Supprimer'; position: absolute; right: 100%; top: 0; bottom: 0; width: 100%; background: var(--accent); color: #000; display: flex; align-items: center; justify-content: flex-end; padding-right: 18px; box-sizing: border-box; font-family: var(--fd); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+#list .item.lift { background: var(--surface); opacity: .6; box-shadow: 0 10px 26px rgba(0,0,0,.55); z-index: 5; transition: none; }
 .item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; padding: 8px 4px 8px 0; }
 .item-main { text-align: left; padding: 6px 4px 6px 16px; min-width: 0; display: block; }
 .item-main .ttl { display: block; font-weight: 500; overflow-wrap: anywhere; }
@@ -1092,7 +1091,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   (function () {
     var ul = $('#list');
     function items() { return Array.prototype.slice.call(ul.querySelectorAll('li.item')); }
-    function pulse(n) { if (!n) return; n.classList.remove('shift'); void n.offsetWidth; n.classList.add('shift'); setTimeout(function () { n.classList.remove('shift'); }, 700); }
     function loop() {
       if (wg.st !== 'drag') return;
       var li = wg.li, r = li.getBoundingClientRect(), v = $('#views').getBoundingClientRect();
@@ -1106,7 +1104,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
           var natural = r.top - wg.ty;
           var o = workouts.splice(cur, 1)[0]; workouts.splice(k, 0, o);
           ul.insertBefore(li, k > cur ? list[k].nextSibling : list[k]);
-          wg.i = k; pulse(list[k]); vibrate(8);
+          wg.i = k; vibrate(8);
           break;
         }
       }
