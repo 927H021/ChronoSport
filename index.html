@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031002521">
+<meta name="app-version" content="20261031002934">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1078,6 +1078,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $$('.tabs button').forEach(function (b) { if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     $('#views').scrollTop = 0;
     if (t === 'history') renderHistory();
+    if (typeof tip === 'function') tip(t);
     if (dir) { var v = $('#v-' + t); v.classList.remove('slide-l', 'slide-r'); void v.offsetWidth; v.classList.add('slide-' + dir); }
   }
   $$('.tabs button').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
@@ -1561,7 +1562,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     Array.prototype.forEach.call(sec.children, function (c) { if (c !== tt && c !== tg) c.hidden = !on; });
     if (on) { cqKey = ''; syncCues(true); }
   }
-  $('#cq-on').addEventListener('change', function () { draft.cuesOn = this.checked; cqToggleSync(); syncDeleteBtn(); });
+  $('#cq-on').addEventListener('change', function () { draft.cuesOn = this.checked; cqToggleSync(); syncDeleteBtn(); if (this.checked) tip('actions'); });
   /* boutons rapides : lus dans les réglages (settings.quick) */
   function buildQuick() {
     var sg = $('#cq-sugg'); sg.textContent = '';
@@ -1882,7 +1883,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#ed-dup').hidden = !isEdit;
     deleteArmed = false;
     buildEditorFields(); refreshEditor(); if (window.syncBeatUI) window.syncBeatUI(); cqToggleSync();
-    $('#editor').hidden = false;
+    $('#editor').hidden = false; tip('editor');
     syncDeleteBtn();
     syncWheels();
     $('.ed-body').scrollTop = 0;
@@ -1921,32 +1922,59 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
 
   /* ---------- présentation au premier démarrage ---------- */
-  var INTRO = [
-    ['Bienvenue', 'ChronoSport', 'Des minuteurs d’intervalles pour vous entraîner, un minuteur à cadran et un chronomètre. Les quatre onglets du bas : Minuteurs, Chrono, Historique et Réglages.'],
-    ['Lancer', 'Démarrer un minuteur', 'Touchez ▶ pour lancer un minuteur. Le bouton + en haut en crée un nouveau, et ⓘ permet de modifier celui de votre choix.'],
-    ['Organiser', 'Ranger vos minuteurs', 'Maintenez un minuteur puis glissez-le vers le haut ou le bas pour changer l’ordre. Balayez-le vers la droite pour le supprimer : une confirmation vous est demandée.'],
-    ['Régler', 'Régler un minuteur', 'Préparation, effort, repos, nombre de séries et de cycles : faites défiler les molettes pour choisir chaque durée.'],
-    ['Actions', 'Actions seconde par seconde', 'Activez-les pour annoncer une action, par exemple « Jab », à une seconde précise, à l’écran et à voix haute. Touchez une ligne et écrivez, ou utilisez les boutons rapides.'],
-    ['Programmer', 'Programmer plus vite', 'Touchez deux numéros de seconde pour sélectionner un bloc, puis Copier, Coller, Boucle, Insérer ou Retirer. Pour un programme différent par série, désactivez « Même programme à chaque série » ; maintenez une série pour la déplacer.'],
-    ['Pour finir', 'Chrono et réglages', 'L’onglet Chrono propose un minuteur à cadran et un chronomètre avec tours. Dans Réglages : sons, voix, thème, actions rapides. Cette présentation s’y revoit à tout moment.']
-  ];
-  var introAt = 0;
+  /* aides contextuelles : chaque page affiche une fois ses explications à la première visite */
+  var TIPS = {
+    home: [
+      ['Bienvenue', 'ChronoSport', 'Des minuteurs d’intervalles pour vous entraîner, avec sons et voix. Les onglets du bas : Minuteurs, Chrono, Historique et Réglages. Vous pouvez aussi balayer l’écran de droite à gauche pour passer de l’un à l’autre.'],
+      ['Minuteurs', 'Vos minuteurs', 'Touchez ▶ pour lancer un minuteur, + pour en créer un, ⓘ pour le modifier. Maintenez un minuteur puis glissez-le pour changer l’ordre ; balayez-le vers la droite pour le supprimer.']
+    ],
+    dial: [
+      ['Chrono', 'Minuteur à cadran', 'Touchez l’affichage du temps pour saisir une durée au clavier numérique, puis lancez. Le cadran montre les secondes qui s’écoulent.'],
+      ['Chrono', 'Chronomètre', 'Choisissez « Chronomètre » en haut : Démarrer lance le temps, Tour note un temps intermédiaire. L’aiguille indique les secondes et le petit cadran compte les tours.']
+    ],
+    history: [
+      ['Historique', 'Vos séances', 'Les séances terminées sont enregistrées ici avec leur nom, leur date et leur durée. Le haut de page résume votre semaine.']
+    ],
+    settings: [
+      ['Réglages', 'Régler l’application', 'Thème, sons, voix, annonces, actions rapides : tout se règle ici. « Exporter » enregistre une sauvegarde de vos minuteurs, « Importer » la restaure. Pensez à exporter de temps en temps.']
+    ],
+    editor: [
+      ['Modifier', 'Régler un minuteur', 'Faites défiler les molettes pour choisir préparation, effort, repos, séries et cycles. « Enregistrer » est en haut à droite, « Lancer » démarre le minuteur directement. Vos modifications sont sauvegardées automatiquement en brouillon.']
+    ],
+    actions: [
+      ['Actions', 'Actions seconde par seconde', 'Touchez une ligne et écrivez l’action, par exemple « Jab », ou touchez un bouton rapide : elle s’affiche et s’annonce à voix haute à la seconde choisie, pendant l’effort.'],
+      ['Actions', 'Programmer plus vite', 'Touchez deux numéros de seconde pour sélectionner un bloc, puis Copier, Coller, Boucle, Insérer ou Retirer. Désactivez « Même programme à chaque série » pour un programme par série ; maintenez une série pour la déplacer.']
+    ]
+  };
+  var introAt = 0, introSet = [];
+  function tipsSeen() { var t = load('tempo.tips', {}); return t && typeof t === 'object' ? t : {}; }
   function introShow(i) {
     introAt = i;
-    var n = INTRO.length, d = INTRO[i];
-    $('#intro-step').textContent = d[0] + ' · ' + (i + 1) + '/' + n;
+    var n = introSet.length, d = introSet[i];
+    $('#intro-step').textContent = n > 1 ? d[0] + ' · ' + (i + 1) + '/' + n : d[0];
     $('#intro-title').textContent = d[1];
     $('#intro-text').textContent = d[2];
     var dots = $('#intro-dots'); dots.textContent = '';
+    dots.hidden = n < 2;
     for (var k = 0; k < n; k++) dots.appendChild(el('i', k === i ? 'on' : ''));
-    $('#intro-next').textContent = i === n - 1 ? 'Commencer' : 'Suivant';
+    $('#intro-next').textContent = i === n - 1 ? 'Compris' : 'Suivant';
     $('#intro-skip').hidden = i === n - 1;
   }
-  function introOpen() { introShow(0); $('#intro').hidden = false; try { $('#intro-next').focus({ preventScroll: true }); } catch (e) {} }
-  function introClose() { $('#intro').hidden = true; save('tempo.intro', 1); }
-  $('#intro-next').addEventListener('click', function () { if (introAt >= INTRO.length - 1) introClose(); else introShow(introAt + 1); });
+  function introClose() { $('#intro').hidden = true; }
+  /* affiche l'aide d'une page, une seule fois (sauf si force) */
+  function tip(key, force) {
+    var seen = tipsSeen();
+    if (!TIPS[key] || (seen[key] && !force) || !$('#intro').hidden) return;
+    seen[key] = 1; save('tempo.tips', seen);
+    setTimeout(function () {
+      if (!$('#intro').hidden) return;
+      introSet = TIPS[key]; introShow(0); $('#intro').hidden = false;
+      try { $('#intro-next').focus({ preventScroll: true }); } catch (e) {}
+    }, 350);
+  }
+  $('#intro-next').addEventListener('click', function () { if (introAt >= introSet.length - 1) introClose(); else introShow(introAt + 1); });
   $('#intro-skip').addEventListener('click', introClose);
-  $('#s-help').addEventListener('click', introOpen);
+  $('#s-help').addEventListener('click', function () { save('tempo.tips', {}); showTab('home'); toast('Les aides s’afficheront de nouveau sur chaque page'); });
 
   /* ---------- audio / feedback ---------- */
   /* Mixage : à déclarer dès le chargement, avant tout son, pour ne pas interrompre la musique. */
@@ -3144,6 +3172,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var d = load('tempo.draft', null);
     if (d && d.draft && typeof d.draft === 'object') { try { openEditor(null, d); toast('Modifications non enregistrées récupérées'); } catch (e) {} }
   })();
-  if (!load('tempo.intro', 0) && $('#editor').hidden) introOpen();
+  if ($('#editor').hidden) tip('home');
 })();
 </script>
