@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031002058">
+<meta name="app-version" content="20261031002521">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -286,6 +286,9 @@ select { background: var(--fill); color: var(--accent); border: 0; border-radius
 .intro-btns button:focus-visible { outline: none; }
 .intro-skip { flex: 0 0 auto; padding: 0 14px; color: var(--muted); background: none; }
 .intro-next { flex: 1; background: var(--accent); color: #000; }
+.view.slide-l { animation: tabInL .22s ease-out; } .view.slide-r { animation: tabInR .22s ease-out; }
+@keyframes tabInL { from { opacity: 0; transform: translateX(34px); } to { opacity: 1; transform: none; } }
+@keyframes tabInR { from { opacity: 0; transform: translateX(-34px); } to { opacity: 1; transform: none; } }
 /* ---------- overlays ---------- */
 .overlay {
   position: fixed; inset: 0; z-index: 20;
@@ -1069,14 +1072,40 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
   /* ---------- navigation ---------- */
   var tab = 'home';
-  function showTab(t) {
+  function showTab(t, dir) {
     tab = t;
     ['home', 'dial', 'history', 'settings'].forEach(function (n) { $('#v-' + n).hidden = n !== t; });
     $$('.tabs button').forEach(function (b) { if (b.dataset.tab === t) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
     $('#views').scrollTop = 0;
     if (t === 'history') renderHistory();
+    if (dir) { var v = $('#v-' + t); v.classList.remove('slide-l', 'slide-r'); void v.offsetWidth; v.classList.add('slide-' + dir); }
   }
   $$('.tabs button').forEach(function (b) { b.addEventListener('click', function () { showTab(b.dataset.tab); }); });
+  /* balayer la page d'un bord à l'autre : de droite à gauche = onglet suivant, de gauche à droite = onglet précédent */
+  (function () {
+    var ORDER = ['home', 'dial', 'history', 'settings'], t0 = null;
+    var views = $('#views');
+    function busy() {
+      return ['editor', 'runner', 'keypad', 'intro', 'del-confirm'].some(function (id) { var e = document.getElementById(id); return e && !e.hidden; });
+    }
+    views.addEventListener('touchstart', function (e) {
+      t0 = null;
+      if (e.touches.length !== 1 || busy()) return;
+      if (e.target.closest && e.target.closest('input, select, textarea, .wheel, .cq-pills, .switch, .seg')) return;
+      t0 = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+    }, { passive: true });
+    views.addEventListener('touchend', function (e) {
+      if (!t0) return;
+      var c = e.changedTouches[0], dx = c.clientX - t0.x, dy = c.clientY - t0.y, dt = Date.now() - t0.t;
+      t0 = null;
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || dt > 800) return;
+      if (busy() || (typeof wg !== 'undefined' && (wg.st !== 'idle' || wg.recent))) return;
+      var i = ORDER.indexOf(tab), j = dx < 0 ? i + 1 : i - 1;
+      if (j < 0 || j >= ORDER.length) return;
+      showTab(ORDER[j], dx < 0 ? 'l' : 'r');
+    }, { passive: true });
+    views.addEventListener('touchcancel', function () { t0 = null; }, { passive: true });
+  })();
 
   /* ---------- home ---------- */
   var PLAY = '<svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14" fill="currentColor"/><path d="M11 8.5v11l9-5.5z" fill="#fff"/></svg>';
