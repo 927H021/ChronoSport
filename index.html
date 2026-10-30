@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261030195141">
+<meta name="app-version" content="20261030195711">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -177,6 +177,10 @@ h1, h2 { margin: 0; text-wrap: balance; }
 .btn.danger { background: var(--surface); color: var(--red); font-weight: 400; }
 
 /* ---------- workout list ---------- */
+#list .item { touch-action: pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+#list .item.swipe::before { content: 'Supprimer'; position: absolute; right: 100%; top: 0; bottom: 0; width: 100%; background: var(--red); color: #fff; display: flex; align-items: center; justify-content: flex-end; padding-right: 18px; box-sizing: border-box; font-family: var(--fd); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+#list .item.lift { background: var(--surface); box-shadow: 0 10px 26px rgba(0,0,0,.55), inset 0 0 0 1px var(--accent); z-index: 5; transition: none; }
+#list .item.shift { animation: cqBlink .7s steps(1, end); }
 .item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; padding: 8px 4px 8px 0; }
 .item-main { text-align: left; padding: 6px 4px 6px 16px; min-width: 0; display: block; }
 .item-main .ttl { display: block; font-weight: 500; overflow-wrap: anywhere; }
@@ -1083,6 +1087,113 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   $('#new-btn').addEventListener('click', function () { openEditor(null); });
 
+  /* ---------- liste des minuteurs : réordonner (appui prolongé + glisser vers le haut/bas) et supprimer (balayer vers la droite) ---------- */
+  var wg = { st: 'idle', li: null, id: null, x: 0, y: 0, sx: 0, sy: 0, grab: 0, ty: 0, timer: 0, raf: 0, from: 0, i: 0, recent: false };
+  (function () {
+    var ul = $('#list');
+    function items() { return Array.prototype.slice.call(ul.querySelectorAll('li.item')); }
+    function pulse(n) { if (!n) return; n.classList.remove('shift'); void n.offsetWidth; n.classList.add('shift'); setTimeout(function () { n.classList.remove('shift'); }, 700); }
+    function loop() {
+      if (wg.st !== 'drag') return;
+      var li = wg.li, r = li.getBoundingClientRect(), v = $('#views').getBoundingClientRect();
+      if (wg.y < v.top + 70) $('#views').scrollTop -= 8; else if (wg.y > v.bottom - 70) $('#views').scrollTop += 8;
+      /* réordonnancement : on passe la pastille devant le voisin sous le doigt */
+      var list = items(), cur = list.indexOf(li);
+      for (var k = 0; k < list.length; k++) {
+        if (k === cur) continue;
+        var b = list[k].getBoundingClientRect();
+        if (wg.y >= b.top && wg.y <= b.bottom && ((k < cur && wg.y < b.top + b.height * 0.6) || (k > cur && wg.y > b.top + b.height * 0.4))) {
+          var natural = r.top - wg.ty;
+          var o = workouts.splice(cur, 1)[0]; workouts.splice(k, 0, o);
+          ul.insertBefore(li, k > cur ? list[k].nextSibling : list[k]);
+          wg.i = k; pulse(list[k]); vibrate(8);
+          break;
+        }
+      }
+      var nat = li.getBoundingClientRect().top - wg.ty;
+      wg.ty = (wg.y - wg.grab) - nat;
+      li.style.transform = 'translateY(' + wg.ty + 'px) scale(1.02)';
+      wg.raf = requestAnimationFrame(loop);
+    }
+    function reset() {
+      clearTimeout(wg.timer); cancelAnimationFrame(wg.raf);
+      if (wg.li) { wg.li.classList.remove('lift', 'swipe', 'back'); wg.li.style.transform = ''; wg.li.style.transition = ''; }
+      wg.st = 'idle'; wg.li = null;
+    }
+    function start(li, x, y) {
+      if (wg.st !== 'idle') reset();
+      wg.li = li; wg.sx = wg.x = x; wg.sy = wg.y = y; wg.st = 'pending'; wg.i = wg.from = items().indexOf(li);
+      wg.id = workouts[wg.from] && workouts[wg.from].id;
+      wg.timer = setTimeout(function () {
+        if (wg.st !== 'pending') return;
+        wg.st = 'drag'; wg.ty = 0; wg.grab = wg.y - li.getBoundingClientRect().top;
+        li.classList.add('lift'); vibrate(15); ensureAudio(); tone(520, 55, 0); tone(780, 70, 45);
+        wg.raf = requestAnimationFrame(loop);
+      }, 380);
+    }
+    function move(x, y, ev) {
+      wg.x = x; wg.y = y;
+      var dx = x - wg.sx, dy = y - wg.sy;
+      if (wg.st === 'pending') {
+        if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { reset(); return; }
+        if (dx > 10 && dx > Math.abs(dy)) { clearTimeout(wg.timer); wg.st = 'swipe'; wg.li.classList.add('swipe'); }
+        else if (dx < -10) { reset(); return; }
+      }
+      if (wg.st === 'swipe') {
+        if (ev && ev.cancelable) ev.preventDefault();
+        wg.li.style.transition = 'none';
+        wg.li.style.transform = 'translateX(' + Math.max(0, dx) + 'px)';
+      } else if (wg.st === 'drag' && ev && ev.cancelable) ev.preventDefault();
+    }
+    function snapBack(li) {
+      li.style.transition = 'transform .25s ease'; li.style.transform = '';
+      setTimeout(function () { li.classList.remove('swipe'); li.style.transition = ''; }, 280);
+    }
+    function end() {
+      var li = wg.li, st = wg.st; if (!li) return;
+      if (st === 'swipe') {
+        var dx = wg.x - wg.sx, id = wg.id, name = (workouts[wg.from] || {}).name || 'ce minuteur';
+        wg.recent = true; setTimeout(function () { wg.recent = false; }, 350);
+        wg.st = 'idle'; wg.li = null;
+        if (dx > li.offsetWidth * 0.38) {
+          li.style.transition = 'transform .2s ease'; li.style.transform = 'translateX(' + Math.round(li.offsetWidth * 0.4) + 'px)';
+          confirmDelete('Supprimer « ' + name + ' » ?', 'Ce minuteur et son programme d’actions seront supprimés définitivement.', function () {
+            workouts = workouts.filter(function (x) { return x.id !== id; });
+            save('tempo.workouts', workouts); renderHome(); toast('Minuteur supprimé');
+          }, function () { snapBack(li); });
+        } else snapBack(li);
+        return;
+      }
+      if (st === 'drag') {
+        wg.recent = true; setTimeout(function () { wg.recent = false; }, 350);
+        cancelAnimationFrame(wg.raf);
+        var moved = wg.i !== wg.from;
+        wg.st = 'idle'; wg.li = null;
+        li.classList.remove('lift'); li.style.transform = '';
+        if (moved) { save('tempo.workouts', workouts); ensureAudio(); tone(660, 70, 0); tone(990, 140, 80); vibrate([15, 40, 25]); }
+        renderHome();
+        if (moved) toast('Minuteur déplacé en position ' + (wg.i + 1));
+        return;
+      }
+      reset();
+    }
+    function tm(e) { move(e.touches[0].clientX, e.touches[0].clientY, e); }
+    function te(e) { var n = e.currentTarget; n.removeEventListener('touchmove', tm); n.removeEventListener('touchend', te); n.removeEventListener('touchcancel', te); end(); }
+    ul.addEventListener('touchstart', function (e) {
+      var li = e.target.closest && e.target.closest('li.item');
+      if (!li || e.touches.length !== 1) return;
+      start(li, e.touches[0].clientX, e.touches[0].clientY);
+      li.addEventListener('touchmove', tm, { passive: false }); li.addEventListener('touchend', te); li.addEventListener('touchcancel', te);
+    }, { passive: true });
+    ul.addEventListener('mousedown', function (e) { var li = e.target.closest && e.target.closest('li.item'); if (li && e.button === 0) start(li, e.clientX, e.clientY); });
+    document.addEventListener('mousemove', function (e) { if (wg.st !== 'idle') move(e.clientX, e.clientY, e); });
+    document.addEventListener('mouseup', function () { if (wg.st !== 'idle') end(); });
+    /* un geste (balayage ou glisser) ne doit pas lancer ou ouvrir le minuteur au relâchement */
+    ul.addEventListener('click', function (e) { if (wg.recent) { e.stopPropagation(); e.preventDefault(); } }, true);
+    ul.addEventListener('contextmenu', function (e) { if (wg.st !== 'idle') e.preventDefault(); });
+  })();
+
+
   /* ---------- editor ---------- */
   var FIELDS = [
     ['prep', 'Préparation', 'time', 0, 3599, 'prep', "Compte à rebours avant le début"],
@@ -1691,17 +1802,17 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     toast('Série S' + n + ' supprimée · ' + draft.sets + (draft.sets > 1 ? ' séries restantes' : ' série restante'));
   }
   /* message de confirmation avant toute suppression, précédé d'un double bip d'avertissement (descendant) */
-  var delAction = null;
-  function confirmDelete(title, text, action) {
-    delAction = action;
+  var delAction = null, delCancel = null;
+  function confirmDelete(title, text, action, onCancel) {
+    delAction = action; delCancel = onCancel || null;
     $('#del-title').textContent = title; $('#del-text').textContent = text;
     $('#del-confirm').hidden = false;
     ensureAudio(); tone(880, 90, 0); tone(620, 160, 120);
     vibrate(30);
     try { $('#del-no').focus(); } catch (e) {}
   }
-  $('#del-no').addEventListener('click', function () { delAction = null; $('#del-confirm').hidden = true; });
-  $('#del-yes').addEventListener('click', function () { var a = delAction; delAction = null; $('#del-confirm').hidden = true; ensureAudio(); tone(520, 70, 0); tone(390, 70, 75); tone(240, 220, 150); vibrate([20, 40, 20]); if (a) a(); });
+  $('#del-no').addEventListener('click', function () { delAction = null; $('#del-confirm').hidden = true; var c = delCancel; delCancel = null; if (c) c(); });
+  $('#del-yes').addEventListener('click', function () { var a = delAction; delAction = null; delCancel = null; $('#del-confirm').hidden = true; ensureAudio(); tone(520, 70, 0); tone(390, 70, 75); tone(240, 220, 150); vibrate([20, 40, 20]); if (a) a(); });
   function deleteTimer() {
     if (editingId) {
       workouts = workouts.filter(function (x) { return x.id !== editingId; });
