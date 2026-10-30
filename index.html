@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261030201419">
+<meta name="app-version" content="20261031002058">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -271,6 +271,21 @@ select { background: var(--fill); color: var(--accent); border: 0; border-radius
 #sw-laps { margin-top: 26px; text-align: left; }
 #sw-laps .row { min-height: 44px; }
 
+/* ---------- présentation du premier démarrage ---------- */
+.intro { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.intro[hidden] { display: none; }
+.intro-card { width: 100%; max-width: 360px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px 16px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+.intro-step { font-family: var(--fd); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.intro-card h2 { font-family: var(--fd); font-size: 26px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin: 6px 0 10px; }
+.intro-card p { font-size: 17px; line-height: 1.45; margin: 0; min-height: 7.2em; }
+.intro-dots { display: flex; justify-content: center; gap: 7px; margin: 14px 0 12px; }
+.intro-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.intro-dots i.on { background: var(--accent); }
+.intro-btns { display: flex; gap: 10px; }
+.intro-btns button { min-height: 46px; border-radius: 10px; font-family: var(--fd); font-size: 18px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; touch-action: manipulation; }
+.intro-btns button:focus-visible { outline: none; }
+.intro-skip { flex: 0 0 auto; padding: 0 14px; color: var(--muted); background: none; }
+.intro-next { flex: 1; background: var(--accent); color: #000; }
 /* ---------- overlays ---------- */
 .overlay {
   position: fixed; inset: 0; z-index: 20;
@@ -794,6 +809,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><span class="lbl">Vider l'historique</span><button class="btn danger" type="button" id="s-clear-hist">Vider</button></div>
       <div class="row"><span class="lbl">Sauvegarde de vos minuteurs et réglages</span><span style="display:flex;gap:6px"><button class="btn ghost" type="button" id="s-export">Exporter</button><button class="btn ghost" type="button" id="s-import">Importer</button></span></div>
       <input type="file" id="s-import-file" accept=".json,application/json" hidden>
+      <div class="row"><span class="lbl">Présentation de l'application<small>Revoir les explications du premier démarrage</small></span><button class="btn ghost" type="button" id="s-help">Revoir</button></div>
       <div class="row"><span class="lbl">Version de l'application<small id="s-version"></small><small id="s-diag"></small></span><button class="btn ghost" type="button" id="s-update">Mettre à jour</button></div>
       <div class="row" id="s-store-warn" hidden><span class="lbl" style="color:var(--accent)">Le stockage de cet appareil est indisponible : vos modifications ne seront pas conservées. Ouvrez ChronoSport depuis l'icône installée ou son adresse web.</span></div>
       <div class="row"><span class="lbl">Rétablir les minuteurs d'origine</span><button class="btn danger" type="button" id="s-reset">Rétablir</button></div>
@@ -880,7 +896,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row" id="cq-del-row"><span class="lbl">Supprimer ce minuteur<small id="cq-del-sub">Supprime le minuteur entier, toutes séries comprises</small></span><button class="btn danger" type="button" id="cq-del">Supprimer</button></div>
       <div class="row"><span class="lbl">Effacer les actions<small id="cq-clear-sub"></small></span><button class="btn danger" type="button" id="cq-clear">Effacer</button></div>
     </div>
-    <div class="foot">À la seconde indiquée de l'effort, l'action s'affiche à l'écran et, si l'annonce vocale est active, elle est lue à voix haute. Touchez une action rapide pour la placer sur la seconde sélectionnée (une 2<sup>e</sup> touche ajoute « / » pour enchaîner). Les boutons rapides se modifient dans Réglages &gt; Actions rapides. Pour changer l'ordre des séries : maintenez une série (S1, S2…) puis faites-la glisser à la place voulue. Pour sélectionner un bloc : touchez le numéro de sa première seconde, puis celui de sa dernière. « Boucle » reproduit ce bloc sélectionné (actions et lignes vides), dans le même ordre, à la suite de lui jusqu'à la fin de l'effort. Pour le copier ailleurs : « Copier », puis sélectionnez la seconde de destination et touchez « Coller ». « Insérer » ajoute, avant la sélection, autant de secondes vides que la sélection en compte : les actions suivantes sont décalées vers le bas et la durée de l'effort ne change pas (les actions qui dépassent la fin sont supprimées).</div>
     </div>
     <div class="group total" style="margin-top:20px"><div class="row"><span>Durée totale</span><b class="num" id="ed-total">0:00</b></div></div>
   </div>
@@ -919,6 +934,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   </div>
   <div class="r-modal" id="r-confirm" hidden><div class="box"><h2>Arrêter la séance ?</h2><p>Elle sera enregistrée dans l'historique.</p><div class="btns"><button class="btn" type="button" id="r-cont">Continuer</button><button class="btn" type="button" id="r-stop">Arrêter</button></div></div></div>
   <div class="r-modal" id="r-done" hidden><div class="box"><h2>Séance terminée</h2><p id="r-done-text"></p><div class="btns"><button class="btn" type="button" id="r-again">Recommencer</button><button class="btn" type="button" id="r-end">Fermer</button></div></div></div>
+</section>
+<section class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title" hidden>
+  <div class="intro-card">
+    <div class="intro-step num" id="intro-step"></div>
+    <h2 id="intro-title"></h2>
+    <p id="intro-text"></p>
+    <div class="intro-dots" id="intro-dots" aria-hidden="true"></div>
+    <div class="intro-btns"><button type="button" class="intro-skip" id="intro-skip">Passer</button><button type="button" class="intro-next" id="intro-next">Suivant</button></div>
+  </div>
 </section>
 <div class="r-modal fixed" id="del-confirm" role="alertdialog" aria-modal="true" aria-labelledby="del-title" hidden><div class="box"><h2 id="del-title"></h2><p id="del-text"></p><div class="btns"><button class="btn" type="button" id="del-no">Annuler</button><button class="btn" type="button" id="del-yes" style="color:var(--red)">Supprimer</button></div></div></div>
 <section class="overlay" id="keypad" hidden>
@@ -1865,6 +1889,35 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (seriesMode()) { var n = edSet + 1; confirmDelete('Supprimer la série S' + n + ' ?', 'Cette série et son programme d’actions seront supprimés ; les séries suivantes remontent.', deleteSeries); }
     else confirmDelete('Supprimer ce minuteur ?', editingId ? 'Le minuteur entier sera supprimé définitivement.' : 'Ce nouveau minuteur sera abandonné sans être enregistré.', deleteTimer);
   });
+
+
+  /* ---------- présentation au premier démarrage ---------- */
+  var INTRO = [
+    ['Bienvenue', 'ChronoSport', 'Des minuteurs d’intervalles pour vous entraîner, un minuteur à cadran et un chronomètre. Les quatre onglets du bas : Minuteurs, Chrono, Historique et Réglages.'],
+    ['Lancer', 'Démarrer un minuteur', 'Touchez ▶ pour lancer un minuteur. Le bouton + en haut en crée un nouveau, et ⓘ permet de modifier celui de votre choix.'],
+    ['Organiser', 'Ranger vos minuteurs', 'Maintenez un minuteur puis glissez-le vers le haut ou le bas pour changer l’ordre. Balayez-le vers la droite pour le supprimer : une confirmation vous est demandée.'],
+    ['Régler', 'Régler un minuteur', 'Préparation, effort, repos, nombre de séries et de cycles : faites défiler les molettes pour choisir chaque durée.'],
+    ['Actions', 'Actions seconde par seconde', 'Activez-les pour annoncer une action, par exemple « Jab », à une seconde précise, à l’écran et à voix haute. Touchez une ligne et écrivez, ou utilisez les boutons rapides.'],
+    ['Programmer', 'Programmer plus vite', 'Touchez deux numéros de seconde pour sélectionner un bloc, puis Copier, Coller, Boucle, Insérer ou Retirer. Pour un programme différent par série, désactivez « Même programme à chaque série » ; maintenez une série pour la déplacer.'],
+    ['Pour finir', 'Chrono et réglages', 'L’onglet Chrono propose un minuteur à cadran et un chronomètre avec tours. Dans Réglages : sons, voix, thème, actions rapides. Cette présentation s’y revoit à tout moment.']
+  ];
+  var introAt = 0;
+  function introShow(i) {
+    introAt = i;
+    var n = INTRO.length, d = INTRO[i];
+    $('#intro-step').textContent = d[0] + ' · ' + (i + 1) + '/' + n;
+    $('#intro-title').textContent = d[1];
+    $('#intro-text').textContent = d[2];
+    var dots = $('#intro-dots'); dots.textContent = '';
+    for (var k = 0; k < n; k++) dots.appendChild(el('i', k === i ? 'on' : ''));
+    $('#intro-next').textContent = i === n - 1 ? 'Commencer' : 'Suivant';
+    $('#intro-skip').hidden = i === n - 1;
+  }
+  function introOpen() { introShow(0); $('#intro').hidden = false; try { $('#intro-next').focus({ preventScroll: true }); } catch (e) {} }
+  function introClose() { $('#intro').hidden = true; save('tempo.intro', 1); }
+  $('#intro-next').addEventListener('click', function () { if (introAt >= INTRO.length - 1) introClose(); else introShow(introAt + 1); });
+  $('#intro-skip').addEventListener('click', introClose);
+  $('#s-help').addEventListener('click', introOpen);
 
   /* ---------- audio / feedback ---------- */
   /* Mixage : à déclarer dès le chargement, avant tout son, pour ne pas interrompre la musique. */
@@ -3062,5 +3115,6 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var d = load('tempo.draft', null);
     if (d && d.draft && typeof d.draft === 'object') { try { openEditor(null, d); toast('Modifications non enregistrées récupérées'); } catch (e) {} }
   })();
+  if (!load('tempo.intro', 0) && $('#editor').hidden) introOpen();
 })();
 </script>
