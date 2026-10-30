@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031002934">
+<meta name="app-version" content="20261031003709">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -271,21 +271,19 @@ select { background: var(--fill); color: var(--accent); border: 0; border-radius
 #sw-laps { margin-top: 26px; text-align: left; }
 #sw-laps .row { min-height: 44px; }
 
-/* ---------- présentation du premier démarrage ---------- */
-.intro { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: max(16px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px)); background: rgba(0,0,0,.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-.intro[hidden] { display: none; }
-.intro-card { width: 100%; max-width: 360px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px 16px; box-shadow: 0 20px 60px rgba(0,0,0,.6); }
-.intro-step { font-family: var(--fd); font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
-.intro-card h2 { font-family: var(--fd); font-size: 26px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin: 6px 0 10px; }
-.intro-card p { font-size: 17px; line-height: 1.45; margin: 0; min-height: 7.2em; }
-.intro-dots { display: flex; justify-content: center; gap: 7px; margin: 14px 0 12px; }
-.intro-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
-.intro-dots i.on { background: var(--accent); }
-.intro-btns { display: flex; gap: 10px; }
-.intro-btns button { min-height: 46px; border-radius: 10px; font-family: var(--fd); font-size: 18px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; touch-action: manipulation; }
-.intro-btns button:focus-visible { outline: none; }
-.intro-skip { flex: 0 0 auto; padding: 0 14px; color: var(--muted); background: none; }
-.intro-next { flex: 1; background: var(--accent); color: #000; }
+/* ---------- visite guidée ---------- */
+#coach { position: fixed; inset: 0; z-index: 90; touch-action: none; }
+#coach[hidden] { display: none; }
+#coach-hole { position: fixed; left: 50%; top: 50%; width: 0; height: 0; border-radius: 12px; box-shadow: 0 0 0 200vmax rgba(0,0,0,.76), 0 0 0 3px var(--accent), 0 0 22px 6px rgba(255,106,26,.55); transition: left .25s ease, top .25s ease, width .25s ease, height .25s ease; pointer-events: none; }
+#coach-tip { position: fixed; width: min(320px, calc(100vw - 24px)); background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px 12px; box-shadow: 0 14px 44px rgba(0,0,0,.6); box-sizing: border-box; }
+.coach-step { font-family: var(--fd); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+#coach-tip h3 { font-family: var(--fd); font-size: 21px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin: 4px 0 6px; }
+#coach-tip p { font-size: 15.5px; line-height: 1.4; margin: 0 0 12px; }
+.coach-nav { display: flex; gap: 6px; align-items: center; }
+.coach-nav button { min-height: 42px; border-radius: 10px; font-family: var(--fd); font-size: 14.5px; font-weight: 600; letter-spacing: .04em; white-space: nowrap; text-transform: uppercase; touch-action: manipulation; outline: none; }
+#coach-back { padding: 0 10px; color: var(--fg); border: 1px solid var(--line); background: none; }
+#coach-skip { padding: 0 6px; color: var(--muted); background: none; margin-right: auto; }
+#coach-next { flex: 0 0 auto; min-width: 96px; padding: 0 14px; background: var(--accent); color: #000; margin-left: auto; }
 .view.slide-l { animation: tabInL .22s ease-out; } .view.slide-r { animation: tabInR .22s ease-out; }
 @keyframes tabInL { from { opacity: 0; transform: translateX(34px); } to { opacity: 1; transform: none; } }
 @keyframes tabInR { from { opacity: 0; transform: translateX(-34px); } to { opacity: 1; transform: none; } }
@@ -812,7 +810,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       <div class="row"><span class="lbl">Vider l'historique</span><button class="btn danger" type="button" id="s-clear-hist">Vider</button></div>
       <div class="row"><span class="lbl">Sauvegarde de vos minuteurs et réglages</span><span style="display:flex;gap:6px"><button class="btn ghost" type="button" id="s-export">Exporter</button><button class="btn ghost" type="button" id="s-import">Importer</button></span></div>
       <input type="file" id="s-import-file" accept=".json,application/json" hidden>
-      <div class="row"><span class="lbl">Présentation de l'application<small>Revoir les explications du premier démarrage</small></span><button class="btn ghost" type="button" id="s-help">Revoir</button></div>
+      <div class="row"><span class="lbl">Visite guidée<small>Relancer la visite guidée sur chaque page</small></span><button class="btn ghost" type="button" id="s-help">Revoir</button></div>
       <div class="row"><span class="lbl">Version de l'application<small id="s-version"></small><small id="s-diag"></small></span><button class="btn ghost" type="button" id="s-update">Mettre à jour</button></div>
       <div class="row" id="s-store-warn" hidden><span class="lbl" style="color:var(--accent)">Le stockage de cet appareil est indisponible : vos modifications ne seront pas conservées. Ouvrez ChronoSport depuis l'icône installée ou son adresse web.</span></div>
       <div class="row"><span class="lbl">Rétablir les minuteurs d'origine</span><button class="btn danger" type="button" id="s-reset">Rétablir</button></div>
@@ -938,15 +936,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   <div class="r-modal" id="r-confirm" hidden><div class="box"><h2>Arrêter la séance ?</h2><p>Elle sera enregistrée dans l'historique.</p><div class="btns"><button class="btn" type="button" id="r-cont">Continuer</button><button class="btn" type="button" id="r-stop">Arrêter</button></div></div></div>
   <div class="r-modal" id="r-done" hidden><div class="box"><h2>Séance terminée</h2><p id="r-done-text"></p><div class="btns"><button class="btn" type="button" id="r-again">Recommencer</button><button class="btn" type="button" id="r-end">Fermer</button></div></div></div>
 </section>
-<section class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title" hidden>
-  <div class="intro-card">
-    <div class="intro-step num" id="intro-step"></div>
-    <h2 id="intro-title"></h2>
-    <p id="intro-text"></p>
-    <div class="intro-dots" id="intro-dots" aria-hidden="true"></div>
-    <div class="intro-btns"><button type="button" class="intro-skip" id="intro-skip">Passer</button><button type="button" class="intro-next" id="intro-next">Suivant</button></div>
+<div id="coach" hidden aria-live="polite">
+  <div id="coach-hole"></div>
+  <div id="coach-tip" role="dialog" aria-labelledby="coach-title">
+    <div class="coach-step num" id="coach-step"></div>
+    <h3 id="coach-title"></h3>
+    <p id="coach-text"></p>
+    <div class="coach-nav"><button type="button" id="coach-back">Précédent</button><button type="button" id="coach-skip">Passer</button><button type="button" id="coach-next">Suivant</button></div>
   </div>
-</section>
+</div>
 <div class="r-modal fixed" id="del-confirm" role="alertdialog" aria-modal="true" aria-labelledby="del-title" hidden><div class="box"><h2 id="del-title"></h2><p id="del-text"></p><div class="btns"><button class="btn" type="button" id="del-no">Annuler</button><button class="btn" type="button" id="del-yes" style="color:var(--red)">Supprimer</button></div></div></div>
 <section class="overlay" id="keypad" hidden>
   <div class="ed-head"><button type="button" id="kp-cancel">Annuler</button><h2>Durée</h2><button type="button" id="kp-ok">OK</button></div>
@@ -1087,7 +1085,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var ORDER = ['home', 'dial', 'history', 'settings'], t0 = null;
     var views = $('#views');
     function busy() {
-      return ['editor', 'runner', 'keypad', 'intro', 'del-confirm'].some(function (id) { var e = document.getElementById(id); return e && !e.hidden; });
+      return ['editor', 'runner', 'keypad', 'coach', 'del-confirm'].some(function (id) { var e = document.getElementById(id); return e && !e.hidden; });
     }
     views.addEventListener('touchstart', function (e) {
       t0 = null;
@@ -1922,59 +1920,127 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
 
   /* ---------- présentation au premier démarrage ---------- */
-  /* aides contextuelles : chaque page affiche une fois ses explications à la première visite */
-  var TIPS = {
+  /* ---------- visite guidée : met en surbrillance les vrais boutons, étape par étape ---------- */
+  function clickMode(m) { var b = document.querySelector('#d-mode [data-m="' + m + '"]'); if (b) b.click(); }
+  var COACH = {
     home: [
-      ['Bienvenue', 'ChronoSport', 'Des minuteurs d’intervalles pour vous entraîner, avec sons et voix. Les onglets du bas : Minuteurs, Chrono, Historique et Réglages. Vous pouvez aussi balayer l’écran de droite à gauche pour passer de l’un à l’autre.'],
-      ['Minuteurs', 'Vos minuteurs', 'Touchez ▶ pour lancer un minuteur, + pour en créer un, ⓘ pour le modifier. Maintenez un minuteur puis glissez-le pour changer l’ordre ; balayez-le vers la droite pour le supprimer.']
+      { title: 'Bienvenue dans ChronoSport', text: 'Une courte visite guidée pour découvrir l’application. Touchez « Suivant » pour avancer.' },
+      { sel: '#new-btn', title: 'Créer un minuteur', text: 'Touchez + pour créer votre propre minuteur : durées, séries, cycles et actions annoncées.' },
+      { sel: '#list .item .play', title: 'Lancer', text: 'Touchez ▶ pour démarrer ce minuteur. Un appui sur le nom du minuteur le lance aussi.' },
+      { sel: '#list .item .info', title: 'Modifier', text: 'Touchez ⓘ pour modifier ce minuteur, le dupliquer ou le supprimer.' },
+      { sel: '#list .item', title: 'Ranger et supprimer', text: 'Maintenez le bloc puis glissez-le vers le haut ou le bas pour changer l’ordre. Balayez-le vers la droite pour le supprimer : une confirmation est demandée.' },
+      { sel: '.tabs', title: 'Naviguer', text: 'Minuteurs, Chrono, Historique, Réglages. Vous pouvez aussi balayer l’écran de droite à gauche pour changer de page.' }
     ],
     dial: [
-      ['Chrono', 'Minuteur à cadran', 'Touchez l’affichage du temps pour saisir une durée au clavier numérique, puis lancez. Le cadran montre les secondes qui s’écoulent.'],
-      ['Chrono', 'Chronomètre', 'Choisissez « Chronomètre » en haut : Démarrer lance le temps, Tour note un temps intermédiaire. L’aiguille indique les secondes et le petit cadran compte les tours.']
+      { sel: '#d-mode', pre: function () { clickMode('timer'); }, title: 'Deux outils', text: 'Choisissez « Minuteur » pour un compte à rebours, ou « Chronomètre » pour mesurer un temps écoulé.' },
+      { sel: '#d-pill', title: 'Régler la durée', text: 'Touchez l’affichage du temps pour saisir une durée au clavier numérique.' },
+      { sel: '#d-timer .dial-ctrl', title: 'Démarrer', text: 'Lancez le minuteur, mettez-le en pause ou remettez-le à zéro avec ces boutons.' },
+      { sel: '#sw-toggle', pre: function () { clickMode('sw'); }, title: 'Chronomètre', text: 'Démarrer lance le chronomètre. L’aiguille du grand cadran indique les secondes.' },
+      { sel: '#sw-lap', title: 'Tours', text: 'Pendant que le chronomètre tourne, Tour note un temps intermédiaire. Le petit cadran compte les tours.' }
     ],
     history: [
-      ['Historique', 'Vos séances', 'Les séances terminées sont enregistrées ici avec leur nom, leur date et leur durée. Le haut de page résume votre semaine.']
+      { sel: '.stats', title: 'Votre semaine', text: 'Le nombre de séances et de minutes d’entraînement de la semaine en cours.' },
+      { sel: '#hist', title: 'Vos séances', text: 'Chaque séance terminée apparaît ici avec son nom, sa date et sa durée.' }
     ],
     settings: [
-      ['Réglages', 'Régler l’application', 'Thème, sons, voix, annonces, actions rapides : tout se règle ici. « Exporter » enregistre une sauvegarde de vos minuteurs, « Importer » la restaure. Pensez à exporter de temps en temps.']
+      { sel: '#s-sound', row: 1, title: 'Son d’alerte', text: 'Choisissez le son qui marque les changements de phase, puis son volume. « Tester » vous le fait entendre.' },
+      { sel: '#s-voice', row: 1, title: 'Annonce vocale', text: 'Active la voix qui annonce les phases, le nom du minuteur et vos actions.' },
+      { sel: '#s-quick-on', row: 1, title: 'Actions rapides', text: 'Ce sont les boutons (Jab, Direct…) qui remplissent vite le tableau d’actions d’un minuteur. Vous pouvez les modifier ici.' },
+      { sel: '#s-theme', row: 1, title: 'Apparence', text: 'Choisissez l’apparence de l’application.' },
+      { sel: '#s-export', row: 1, title: 'Sauvegarde', text: 'Exportez une sauvegarde de vos minuteurs et réglages, puis importez-la pour les restaurer. Pensez-y de temps en temps.' }
     ],
     editor: [
-      ['Modifier', 'Régler un minuteur', 'Faites défiler les molettes pour choisir préparation, effort, repos, séries et cycles. « Enregistrer » est en haut à droite, « Lancer » démarre le minuteur directement. Vos modifications sont sauvegardées automatiquement en brouillon.']
+      { sel: '#ed-name', title: 'Nom du minuteur', text: 'Donnez un nom à votre minuteur : il est affiché et annoncé à voix haute à la place du mot « Effort ».' },
+      { sel: '#ed-fields .field', title: 'Les durées', text: 'Faites défiler les molettes (minutes et secondes) pour régler chaque durée. En dessous : séries, cycles et retour au calme.' },
+      { sel: '#cq-toggle', title: 'Actions seconde par seconde', text: 'Activez cet interrupteur pour programmer des actions (« Jab »…) annoncées à des secondes précises de l’effort.' },
+      { sel: '#ed-save', title: 'Enregistrer', text: 'Touchez « Enregistrer » pour garder le minuteur. Vos modifications sont aussi sauvegardées automatiquement en brouillon.' },
+      { sel: '#ed-start', title: 'Lancer', text: '« Lancer » enregistre le minuteur et le démarre aussitôt.' }
     ],
     actions: [
-      ['Actions', 'Actions seconde par seconde', 'Touchez une ligne et écrivez l’action, par exemple « Jab », ou touchez un bouton rapide : elle s’affiche et s’annonce à voix haute à la seconde choisie, pendant l’effort.'],
-      ['Actions', 'Programmer plus vite', 'Touchez deux numéros de seconde pour sélectionner un bloc, puis Copier, Coller, Boucle, Insérer ou Retirer. Désactivez « Même programme à chaque série » pour un programme par série ; maintenez une série pour la déplacer.']
+      { sel: '#cq-sugg', title: 'Boutons rapides', text: 'Touchez un bouton pour placer l’action sur la seconde sélectionnée. Une deuxième touche ajoute « / » pour enchaîner deux actions.' },
+      { sel: '#cq-table .cq-row', title: 'Écrire une action', text: 'Touchez une ligne et écrivez l’action : elle s’affichera et sera annoncée à cette seconde de l’effort.' },
+      { sel: '#cq-table .cq-t', title: 'Sélectionner des secondes', text: 'Touchez un numéro de seconde, puis un second numéro pour sélectionner tout un bloc.' },
+      { sel: '#cq-bar', title: 'Copier, coller, répéter', text: 'Copier et Coller déplacent un bloc. Boucle le répète jusqu’à la fin de l’effort. Insérer ajoute des secondes vides, Retirer en supprime.' },
+      { sel: '#cq-same-row', title: 'Une série ou toutes', text: 'Laissé activé, toutes les séries suivent le même programme. Désactivez-le pour écrire un programme par série, puis maintenez une série pour la déplacer.' }
     ]
   };
-  var introAt = 0, introSet = [];
+  var COACH_END = { dial: function () { clickMode('timer'); } };
+  var cs = { key: '', steps: [], i: -1 };
   function tipsSeen() { var t = load('tempo.tips', {}); return t && typeof t === 'object' ? t : {}; }
-  function introShow(i) {
-    introAt = i;
-    var n = introSet.length, d = introSet[i];
-    $('#intro-step').textContent = n > 1 ? d[0] + ' · ' + (i + 1) + '/' + n : d[0];
-    $('#intro-title').textContent = d[1];
-    $('#intro-text').textContent = d[2];
-    var dots = $('#intro-dots'); dots.textContent = '';
-    dots.hidden = n < 2;
-    for (var k = 0; k < n; k++) dots.appendChild(el('i', k === i ? 'on' : ''));
-    $('#intro-next').textContent = i === n - 1 ? 'Compris' : 'Suivant';
-    $('#intro-skip').hidden = i === n - 1;
+  function coachEl(st) {
+    if (!st.sel) return null;
+    var e = document.querySelector(st.sel);
+    if (e && st.row) e = e.closest('.row, .group') || e;
+    return e && e.getClientRects().length ? e : null;
   }
-  function introClose() { $('#intro').hidden = true; }
-  /* affiche l'aide d'une page, une seule fois (sauf si force) */
+  function coachPlace(st, e) {
+    var hole = $('#coach-hole'), tipEl = $('#coach-tip'), vw = innerWidth, vh = innerHeight, pad = 6, r = null;
+    if (e) {
+      var b = e.getBoundingClientRect();
+      var l = Math.max(4, b.left - pad), t = Math.max(4, b.top - pad), rr = Math.min(vw - 4, b.right + pad), bb = Math.min(vh - 4, b.bottom + pad);
+      r = { l: l, t: t, w: rr - l, h: bb - t };
+      hole.style.cssText = 'left:' + r.l + 'px;top:' + r.t + 'px;width:' + r.w + 'px;height:' + r.h + 'px';
+    } else hole.style.cssText = 'left:50%;top:45%;width:0;height:0';
+    var tw = tipEl.offsetWidth, th = tipEl.offsetHeight, x, y, gap = 14;
+    if (!r) { x = (vw - tw) / 2; y = (vh - th) / 2; }
+    else if (r.t + r.h + gap + th <= vh - 8) { y = r.t + r.h + gap; x = r.l + r.w / 2 - tw / 2; }
+    else if (r.t - gap - th >= 8) { y = r.t - gap - th; x = r.l + r.w / 2 - tw / 2; }
+    else if (r.l + r.w + gap + tw <= vw - 8) { x = r.l + r.w + gap; y = r.t + r.h / 2 - th / 2; }
+    else if (r.l - gap - tw >= 8) { x = r.l - gap - tw; y = r.t + r.h / 2 - th / 2; }
+    else { x = (vw - tw) / 2; y = vh - th - 16; }
+    x = Math.max(8, Math.min(vw - tw - 8, x)); y = Math.max(8, Math.min(vh - th - 8, y));
+    tipEl.style.left = x + 'px'; tipEl.style.top = y + 'px';
+  }
+  function coachShow(i) {
+    var st = cs.steps[i]; if (!st) return;
+    cs.i = i;
+    var e = coachEl(st);
+    if (e) { try { e.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (x) {} }
+    $('#coach-step').textContent = 'Étape ' + (i + 1) + ' sur ' + cs.steps.length;
+    $('#coach-title').textContent = st.title; $('#coach-text').textContent = st.text;
+    $('#coach-back').hidden = i === 0;
+    $('#coach-skip').hidden = i === cs.steps.length - 1;
+    $('#coach-next').textContent = i === cs.steps.length - 1 ? 'Terminer' : 'Suivant';
+    $('#coach').hidden = false;
+    coachPlace(st, e);
+    setTimeout(function () { if (cs.i === i && !$('#coach').hidden) coachPlace(st, coachEl(st)); }, 120);
+  }
+  /* se place sur l'étape suivante (dir = 1) ou précédente (dir = -1) dont la cible existe à l'écran */
+  function coachGo(dir) {
+    var i = cs.i + dir;
+    (function step() {
+      if (i >= cs.steps.length) { coachEnd(); return; }
+      if (i < 0) { return; }
+      var st = cs.steps[i];
+      if (st.pre) { try { st.pre(); } catch (x) {} }
+      setTimeout(function () {
+        if (!st.sel || coachEl(st)) { coachShow(i); return; }
+        i += dir; step();
+      }, st.pre ? 160 : 0);
+    })();
+  }
+  function coachEnd() {
+    $('#coach').hidden = true;
+    var f = COACH_END[cs.key]; if (f) { try { f(); } catch (e) {} }
+    cs.i = -1;
+  }
+  function coachStart(key) {
+    if (!COACH[key] || !$('#coach').hidden) return;
+    cs.key = key; cs.steps = COACH[key]; cs.i = -1;
+    coachGo(1);
+  }
+  /* lance la visite d'une page une seule fois, à la première visite */
   function tip(key, force) {
     var seen = tipsSeen();
-    if (!TIPS[key] || (seen[key] && !force) || !$('#intro').hidden) return;
+    if (!COACH[key] || (seen[key] && !force) || !$('#coach').hidden) return;
     seen[key] = 1; save('tempo.tips', seen);
-    setTimeout(function () {
-      if (!$('#intro').hidden) return;
-      introSet = TIPS[key]; introShow(0); $('#intro').hidden = false;
-      try { $('#intro-next').focus({ preventScroll: true }); } catch (e) {}
-    }, 350);
+    setTimeout(function () { coachStart(key); }, 450);
   }
-  $('#intro-next').addEventListener('click', function () { if (introAt >= introSet.length - 1) introClose(); else introShow(introAt + 1); });
-  $('#intro-skip').addEventListener('click', introClose);
-  $('#s-help').addEventListener('click', function () { save('tempo.tips', {}); showTab('home'); toast('Les aides s’afficheront de nouveau sur chaque page'); });
+  $('#coach-next').addEventListener('click', function () { coachGo(1); });
+  $('#coach-back').addEventListener('click', function () { coachGo(-1); });
+  $('#coach-skip').addEventListener('click', coachEnd);
+  window.addEventListener('resize', function () { if (!$('#coach').hidden && cs.i >= 0) coachShow(cs.i); });
+  $('#s-help').addEventListener('click', function () { save('tempo.tips', {}); showTab('home'); toast('La visite guidée se relancera sur chaque page'); });
 
   /* ---------- audio / feedback ---------- */
   /* Mixage : à déclarer dès le chargement, avant tout son, pour ne pas interrompre la musique. */
