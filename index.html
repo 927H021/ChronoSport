@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261030194044">
+<meta name="app-version" content="20261030194548">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -664,7 +664,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 .cq-pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
 .cq-pill.drag { transform: scale(1.3); background: var(--surface); border-color: var(--accent); color: var(--accent); box-shadow: 0 6px 16px rgba(0,0,0,.45), inset 0 0 0 1px var(--accent); position: relative; z-index: 2; transition: none; -webkit-user-select: none; user-select: none; }
 #cq-series .cq-pill { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.cq-pill.dropped { animation: cqDrop 1.1s ease-out; }
+.cq-pill.dropped { animation: cqDrop 1.2s ease-out, cqBlink 1.2s steps(1, end); }
+.cq-pill.shift { animation: cqBlink .7s steps(1, end); }
+@keyframes cqBlink { 0% { opacity: 1; } 12% { opacity: .1; } 25% { opacity: 1; } 37% { opacity: .1; } 50% { opacity: 1; } 62% { opacity: .1; } 75%, 100% { opacity: 1; } }
+#cq-bubble { position: fixed; z-index: 60; width: 64px; height: 48px; display: grid; place-items: center; border-radius: 10px; background: var(--accent); color: #000; font-family: var(--fd); font-size: 26px; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.5); pointer-events: none; }
+#cq-bubble[hidden] { display: none; }
 @keyframes cqDrop { 0% { background: #fff; color: #000; border-color: #fff; box-shadow: 0 0 18px 4px rgba(255,255,255,.75); transform: scale(1.3); } 40% { transform: scale(1.12); } 100% { background: var(--bg); transform: none; } }
 .cq-pill.has::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: 6px; vertical-align: middle; }
 .cq-sugg .cq-pill { min-height: 34px; font-size: 15px; text-transform: none; letter-spacing: .02em; font-family: var(--f); font-weight: 500; }
@@ -1309,6 +1313,17 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       for (var i = 0; i < k.length; i++) { var r = k[i].getBoundingClientRect(); if (x >= r.left && x <= r.right) return i; }
       return -1;
     }
+    var bub = null;
+    function bubble(on) {
+      if (!bub) { bub = document.createElement('div'); bub.id = 'cq-bubble'; document.body.appendChild(bub); }
+      bub.hidden = !on;
+      if (!on) return;
+      var r = ser.getBoundingClientRect(), w = 64;
+      bub.textContent = 'S' + (edSet + 1);
+      bub.style.left = Math.max(8, Math.min(innerWidth - w - 8, cqDrag.x - w / 2)) + 'px';
+      bub.style.top = Math.max(4, r.top - 62) + 'px';
+    }
+    function pulse(node, cls, ms) { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); setTimeout(function () { node.classList.remove(cls); }, ms); }
     function relabel() {
       Array.prototype.forEach.call(ser.children, function (p, i) {
         p.firstChild.nodeValue = 'S' + (i + 1); p.setAttribute('aria-label', 'Série ' + (i + 1));
@@ -1323,6 +1338,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       ser.insertBefore(node, t > from ? ref.nextSibling : ref);
       cqDrag.i = t; edSet = t;
       relabel();
+      pulse(ref, 'shift', 700);
       vibrate(8);
     }
     function loop() {
@@ -1330,6 +1346,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       var r = ser.getBoundingClientRect();
       if (cqDrag.x < r.left + 36) ser.scrollLeft -= 7; else if (cqDrag.x > r.right - 36) ser.scrollLeft += 7;
       moveTo(idxAt(cqDrag.x));
+      bubble(true);
       cqDrag.raf = requestAnimationFrame(loop);
     }
     function start(p, x, y) {
@@ -1350,7 +1367,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     function end() {
       clearTimeout(cqDrag.timer);
       if (!cqDrag.on) return;
-      cqDrag.on = false; cancelAnimationFrame(cqDrag.raf);
+      cqDrag.on = false; cancelAnimationFrame(cqDrag.raf); bubble(false);
       cqDrag.node.classList.remove('drag');
       cqDrag.recent = true; setTimeout(function () { cqDrag.recent = false; }, 350);
       cqSel = null; cqFocus = 0; cqKey = '';
@@ -1358,14 +1375,20 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       if (cqDrag.i !== cqDrag.from) {
         /* confirmation : son, vibration, éclair sur la série déplacée et message */
         ensureAudio(); tone(660, 70, 0); tone(990, 140, 80); vibrate([15, 40, 25]);
-        var np = ser.children[cqDrag.i];
-        if (np) { np.classList.remove('dropped'); void np.offsetWidth; np.classList.add('dropped'); setTimeout(function () { np.classList.remove('dropped'); }, 1200); }
+        var lo = Math.min(cqDrag.from, cqDrag.i), hi = Math.max(cqDrag.from, cqDrag.i);
+        for (var q = lo; q <= hi; q++) (function (np) { if (np) { np.classList.remove('dropped'); void np.offsetWidth; np.classList.add('dropped'); setTimeout(function () { np.classList.remove('dropped'); }, 1300); } })(ser.children[q]);
         toast('Série S' + (cqDrag.from + 1) + ' déplacée en position S' + (cqDrag.i + 1));
       }
     }
-    ser.addEventListener('touchstart', function (e) { var p = e.target.closest && e.target.closest('.cq-pill'); if (p && e.touches.length === 1) start(p, e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
-    ser.addEventListener('touchmove', function (e) { move(e.touches[0].clientX, e.touches[0].clientY, e); }, { passive: false });
-    ['touchend', 'touchcancel'].forEach(function (t) { ser.addEventListener(t, end); });
+    function tm(e) { move(e.touches[0].clientX, e.touches[0].clientY, e); }
+    function te(e) { var n = e.currentTarget; n.removeEventListener('touchmove', tm); n.removeEventListener('touchend', te); n.removeEventListener('touchcancel', te); end(); }
+    /* les écouteurs sont posés sur la pastille touchée elle-même : l'élément est déplacé dans le DOM pendant le geste, et les évènements tactiles restent attachés à lui */
+    ser.addEventListener('touchstart', function (e) {
+      var p = e.target.closest && e.target.closest('.cq-pill');
+      if (!p || e.touches.length !== 1) return;
+      start(p, e.touches[0].clientX, e.touches[0].clientY);
+      p.addEventListener('touchmove', tm, { passive: false }); p.addEventListener('touchend', te); p.addEventListener('touchcancel', te);
+    }, { passive: true });
     ser.addEventListener('mousedown', function (e) { var p = e.target.closest && e.target.closest('.cq-pill'); if (p && e.button === 0) start(p, e.clientX, e.clientY); });
     document.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY, e); });
     document.addEventListener('mouseup', end);
