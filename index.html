@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031144715">
+<meta name="app-version" content="20261031200341">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -678,6 +678,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 }
 
 /* ---- actions seconde par seconde : éditeur en tableau ---- */
+.cq-ghost { position: fixed; z-index: 60; padding: 8px 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); opacity: .8; pointer-events: none; font-size: 17px; max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 6px 16px rgba(0,0,0,.45); transform: translate(-50%, -135%); }
+#cq-sugg-wrap.drop .cq-sugg { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 12px; min-height: 40px; }
+#cq-sugg-wrap.over .cq-sugg { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.cq-dropmsg { color: var(--accent); font-size: 14px; padding: 8px 4px; }
+.cq-row.dragsrc { opacity: .5; }
 .cq-pad { padding: 10px 12px 0; }
 .cq-pills { display: flex; gap: 6px; overflow-x: auto; padding: 8px 6px 12px; margin: -6px -6px 0; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .cq-pill { flex: none; min-width: 46px; min-height: 38px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); font-family: var(--fd); font-size: 17px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; touch-action: manipulation; white-space: nowrap; }
@@ -1606,6 +1611,70 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (on) { cqKey = ''; syncCues(true); }
   }
   $('#cq-on').addEventListener('change', function () { draft.cuesOn = this.checked; cqToggleSync(); syncDeleteBtn(); if (this.checked) tip('actions'); });
+  /* glisser une action du tableau (maintien ~0,5 s sur son texte ou son numéro) vers les boutons rapides : elle y est ajoutée pour de bon */
+  (function () {
+    var host = $('#cq-table'), st = null, ghost = null;
+    function zone() { return $('#cq-sugg-wrap'); }
+    function point(e) { var t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e; return { x: t.clientX, y: t.clientY }; }
+    function inZone(p) { var r = zone().getBoundingClientRect(); return p.x >= r.left - 12 && p.x <= r.right + 12 && p.y >= r.top - 14 && p.y <= r.bottom + 14; }
+    function begin() {
+      st.on = true; st.timer = 0;
+      try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+      try { window.getSelection().removeAllRanges(); } catch (e) {}
+      st.row.classList.add('dragsrc');
+      ghost = el('div', 'cq-ghost', st.text); document.body.appendChild(ghost);
+      var z = zone(); z.hidden = false; z.classList.add('drop');
+      if (!settings.quick.length) { var sg = $('#cq-sugg'); sg.textContent = ''; sg.appendChild(el('div', 'cq-dropmsg', 'Déposez ici pour créer une action rapide')); }
+      ensureAudio(); tone(520, 55, 0); tone(780, 70, 45); vibrate(15);
+      place(st.p);
+    }
+    function place(p) { if (ghost) { ghost.style.left = p.x + 'px'; ghost.style.top = p.y + 'px'; } zone().classList.toggle('over', inZone(p)); }
+    function down(e) {
+      if (st || (e.type === 'mousedown' && e.button !== 0)) return;
+      var tg = e.target, row = tg.closest && tg.closest('.cq-row');
+      if (!row || (tg.closest && tg.closest('.cq-x'))) return;
+      var inp = row.querySelector('input'), text = cleanWord(inp.value);
+      if (!text) return;
+      if (document.activeElement === inp && tg === inp) return;   /* en cours de saisie : on ne détourne pas le toucher */
+      var p = point(e);
+      st = { row: row, text: text, on: false, sx: p.x, sy: p.y, p: p, timer: setTimeout(begin, 500) };
+    }
+    function move(e) {
+      if (!st) return;
+      var p = point(e); st.p = p;
+      if (!st.on) { if (Math.abs(p.x - st.sx) > 8 || Math.abs(p.y - st.sy) > 8) { clearTimeout(st.timer); st = null; } return; }
+      if (e.cancelable) e.preventDefault();
+      place(p);
+    }
+    function end(e, cancel) {
+      if (!st) return;
+      clearTimeout(st.timer);
+      var s = st; st = null;
+      if (!s.on) return;
+      var hit = !cancel && inZone(s.p);
+      s.row.classList.remove('dragsrc');
+      if (ghost) { ghost.remove(); ghost = null; }
+      var z = zone(); z.classList.remove('drop', 'over');
+      cqDrag.recent = true; setTimeout(function () { cqDrag.recent = false; }, 350);
+      if (!hit) { buildQuick(); return; }
+      var v = s.text;
+      if (settings.quick.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) { buildQuick(); toast('Cette action existe déjà dans les boutons rapides'); return; }
+      if (settings.quick.length >= 40) { buildQuick(); toast('40 actions rapides au maximum'); return; }
+      commitQuick(settings.quick.concat(v));
+      var sgs = $('#cq-sugg'); sgs.scrollLeft = sgs.scrollWidth; zone().scrollLeft = zone().scrollWidth;   /* montre le nouveau bouton, à la fin */
+      tone(660, 70, 0); tone(990, 140, 80); vibrate([15, 40, 25]);
+      toast('« ' + v + ' » ajoutée aux actions rapides');
+    }
+    host.addEventListener('touchstart', down, { passive: true });
+    host.addEventListener('touchmove', move, { passive: false });
+    host.addEventListener('touchend', function (e) { end(e, false); });
+    host.addEventListener('touchcancel', function (e) { end(e, true); });
+    host.addEventListener('mousedown', down);
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', function (e) { end(e, false); });
+    host.addEventListener('contextmenu', function (e) { if (st) e.preventDefault(); });
+    host.addEventListener('click', function (e) { if (cqDrag.recent) { e.preventDefault(); e.stopPropagation(); } }, true);
+  })();
   /* boutons rapides : lus dans les réglages (settings.quick) */
   function buildQuick() {
     var sg = $('#cq-sugg'); sg.textContent = '';
@@ -2002,7 +2071,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       { sel: '#ed-start', title: 'Lancer', text: '« Lancer » enregistre le minuteur et le démarre aussitôt.' }
     ],
     actions: [
-      { sel: '#cq-sugg', title: 'Boutons rapides', text: 'Touchez un bouton pour placer l’action sur la seconde sélectionnée ; une deuxième touche ajoute « / » pour enchaîner deux actions. Ces boutons se préenregistrent dans Réglages > Actions rapides : ajoutez les vôtres, comme Jump, Squat ou Burpees.' },
+      { sel: '#cq-sugg', title: 'Boutons rapides', text: 'Touchez un bouton pour placer l’action sur la seconde sélectionnée ; une deuxième touche ajoute « / » pour enchaîner deux actions. Ces boutons se préenregistrent dans Réglages > Actions rapides : ajoutez les vôtres, comme Jump, Squat ou Burpees. Pour en créer une depuis le tableau, maintenez une action écrite et glissez-la sur ces boutons.' },
       { sel: '#cq-table .cq-row', title: 'Écrire une action', text: 'Touchez une ligne et écrivez l’action : elle s’affichera et sera annoncée à cette seconde de l’effort.' },
       { sel: '#cq-table .cq-t', title: 'Sélectionner des secondes', text: 'Touchez un numéro de seconde, puis un second numéro pour sélectionner tout un bloc.' },
       { sel: '#cq-bar', title: 'Copier, coller, répéter', text: 'Copier et Coller déplacent un bloc. Boucle le répète jusqu’à la fin de l’effort. Insérer ajoute des secondes vides, Retirer en supprime.' },
