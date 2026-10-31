@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031202008">
+<meta name="app-version" content="20261031202357">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1703,6 +1703,83 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     document.addEventListener('mouseup', function (e) { end(e, false); });
     host.addEventListener('contextmenu', function (e) { if (st) e.preventDefault(); });
     host.addEventListener('click', function (e) { if (cqDrag.recent) { e.preventDefault(); e.stopPropagation(); } }, true);
+  })();
+  /* réorganiser les boutons rapides : maintenir un bouton (~0,4 s) puis le glisser à sa nouvelle place, comme pour les séries */
+  (function () {
+    var sg = $('#cq-sugg'), d = null, bub = null;
+    function chipAt(x) {
+      var k = sg.children;
+      for (var i = 0; i < k.length; i++) { var r = k[i].getBoundingClientRect(); if (x >= r.left && x <= r.right) return k[i]; }
+      return null;
+    }
+    function bubble(on) {
+      if (!bub) { bub = el('div', 'cq-ghost'); document.body.appendChild(bub); }
+      bub.hidden = !on; bub.style.display = on ? '' : 'none';
+      if (!on) return;
+      var z = $('#cq-sugg-wrap').getBoundingClientRect(), w = bub.offsetWidth || 80;
+      bub.textContent = d.node.textContent;
+      bub.style.left = Math.max(8 + w / 2, Math.min(innerWidth - 8 - w / 2, d.x)) + 'px';
+      bub.style.top = Math.max(4, z.top - 58) + 'px';
+    }
+    function pulse(node, ms) { if (!node) return; node.classList.remove('shift'); void node.offsetWidth; node.classList.add('shift'); setTimeout(function () { node.classList.remove('shift'); }, ms); }
+    function loop() {
+      if (!d || !d.on) return;
+      var r = sg.getBoundingClientRect();
+      if (d.x < r.left + 36) sg.scrollLeft -= 7; else if (d.x > r.right - 36) sg.scrollLeft += 7;
+      var t = chipAt(d.x);
+      if (t && t !== d.node) {
+        var kids = Array.prototype.slice.call(sg.children), a = kids.indexOf(d.node), b = kids.indexOf(t);
+        sg.insertBefore(d.node, b > a ? t.nextSibling : t);
+        pulse(t, 700); vibrate(8);
+      }
+      bubble(true);
+      d.raf = requestAnimationFrame(loop);
+    }
+    function begin() {
+      d.on = true; d.timer = 0;
+      d.from = Array.prototype.indexOf.call(sg.children, d.node);
+      d.node.classList.add('drag'); vibrate(15); ensureAudio(); tone(520, 55, 0); tone(780, 70, 45);
+      d.raf = requestAnimationFrame(loop);
+    }
+    function tm(e) { move(e.touches[0].clientX, e.touches[0].clientY, e); }
+    function move(x, y, e) {
+      if (!d) return;
+      if (d.on) { d.x = x; if (e && e.cancelable) e.preventDefault(); return; }
+      if (Math.abs(x - d.sx) > 8 || Math.abs(y - d.sy) > 8) { clearTimeout(d.timer); cleanup(); }
+    }
+    function cleanup() { if (d && d.node) { d.node.removeEventListener('touchmove', tm); d.node.removeEventListener('touchend', te); d.node.removeEventListener('touchcancel', te); } d = null; }
+    function te() { end(); }
+    function end() {
+      if (!d) return;
+      clearTimeout(d.timer);
+      var s = d; 
+      if (!s.on) { cleanup(); return; }
+      cancelAnimationFrame(s.raf); bubble(false);
+      s.node.classList.remove('drag');
+      cqDrag.recent = true; setTimeout(function () { cqDrag.recent = false; }, 350);
+      var kids = Array.prototype.slice.call(sg.children), to = kids.indexOf(s.node);
+      cleanup();
+      if (to !== s.from) {
+        settings.quick = kids.map(function (c) { return c.textContent; }); save('tempo.settings', settings); renderQuickSettings();
+        ensureAudio(); tone(660, 70, 0); tone(990, 140, 80); vibrate([15, 40, 25]);
+        toast('« ' + kids[to].textContent + ' » déplacée en position ' + (to + 1));
+      }
+    }
+    function down(e) {
+      if (d || (e.type === 'mousedown' && e.button !== 0)) return;
+      var node = e.target.closest && e.target.closest('.cq-pill');
+      if (!node || node.parentNode !== sg || node.classList.contains('cq-ph')) return;
+      var t = e.touches ? e.touches[0] : e;
+      d = { node: node, on: false, sx: t.clientX, sy: t.clientY, x: t.clientX, from: 0, timer: setTimeout(begin, 380), raf: 0 };
+      /* les écouteurs sont posés sur le bouton lui-même : il est déplacé dans le DOM pendant le geste */
+      if (e.touches) { node.addEventListener('touchmove', tm, { passive: false }); node.addEventListener('touchend', te); node.addEventListener('touchcancel', te); }
+    }
+    sg.addEventListener('touchstart', down, { passive: true });
+    sg.addEventListener('mousedown', down);
+    document.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY, e); });
+    document.addEventListener('mouseup', function () { if (d && !('touch' in d)) end(); });
+    sg.addEventListener('contextmenu', function (e) { if (d) e.preventDefault(); });
+    sg.addEventListener('click', function (e) { if (cqDrag.recent) { e.preventDefault(); e.stopPropagation(); } }, true);
   })();
   /* boutons rapides : lus dans les réglages (settings.quick) */
   function buildQuick() {
