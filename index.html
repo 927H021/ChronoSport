@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031200341">
+<meta name="app-version" content="20261031200910">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -678,7 +678,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 }
 
 /* ---- actions seconde par seconde : éditeur en tableau ---- */
-.cq-ghost { position: fixed; z-index: 60; padding: 8px 16px; border-radius: 10px; background: var(--surface); border: 1px solid var(--accent); color: var(--accent); opacity: .8; pointer-events: none; font-size: 17px; max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 6px 16px rgba(0,0,0,.45); transform: translate(-50%, -135%); }
+.cq-ghost { position: fixed; z-index: 60; padding: 8px 16px; border-radius: 10px; background: var(--accent); color: #000; pointer-events: none; font-size: 18px; font-weight: 600; max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 6px 18px rgba(0,0,0,.5); transform: translateX(-50%); }
 #cq-sugg-wrap.drop .cq-sugg { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 12px; min-height: 40px; }
 #cq-sugg-wrap.over .cq-sugg { background: color-mix(in srgb, var(--accent) 22%, transparent); }
 .cq-dropmsg { color: var(--accent); font-size: 14px; padding: 8px 4px; }
@@ -1611,12 +1611,22 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (on) { cqKey = ''; syncCues(true); }
   }
   $('#cq-on').addEventListener('change', function () { draft.cuesOn = this.checked; cqToggleSync(); syncDeleteBtn(); if (this.checked) tip('actions'); });
-  /* glisser une action du tableau (maintien ~0,5 s sur son texte ou son numéro) vers les boutons rapides : elle y est ajoutée pour de bon */
+  /* glisser une action du tableau (maintien ~0,5 s sur son texte ou son numéro) vers les boutons rapides, à la place voulue : elle y est ajoutée pour de bon.
+     Même signalétique que les autres glisser-déposer : pastille agrandie et transparente, bulle, clignotement des boutons dépassés, son, vibration et message. */
   (function () {
-    var host = $('#cq-table'), st = null, ghost = null;
+    var host = $('#cq-table'), st = null, ghost = null, ph = null, scrollRaf = 0;
     function zone() { return $('#cq-sugg-wrap'); }
     function point(e) { var t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e; return { x: t.clientX, y: t.clientY }; }
-    function inZone(p) { var r = zone().getBoundingClientRect(); return p.x >= r.left - 12 && p.x <= r.right + 12 && p.y >= r.top - 14 && p.y <= r.bottom + 14; }
+    function inZone(p) { var r = zone().getBoundingClientRect(); return p.x >= r.left - 12 && p.x <= r.right + 12 && p.y >= r.top - 18 && p.y <= r.bottom + 18; }
+    function chips() { return Array.prototype.filter.call($('#cq-sugg').children, function (c) { return c !== ph && c.classList.contains('cq-pill'); }); }
+    function pulse(node, ms) { if (!node) return; node.classList.remove('shift'); void node.offsetWidth; node.classList.add('shift'); setTimeout(function () { node.classList.remove('shift'); }, ms); }
+    function idxAt(x) { var c = chips(), n = 0; for (var i = 0; i < c.length; i++) { var r = c[i].getBoundingClientRect(); if (x > r.left + r.width / 2) n = i + 1; } return n; }
+    function loop() {
+      if (!st || !st.on) return;
+      var sg = $('#cq-sugg'), r = sg.getBoundingClientRect();
+      if (inZone(st.p)) { if (st.p.x < r.left + 36) sg.scrollLeft -= 7; else if (st.p.x > r.right - 36) sg.scrollLeft += 7; place(st.p); }
+      scrollRaf = requestAnimationFrame(loop);
+    }
     function begin() {
       st.on = true; st.timer = 0;
       try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
@@ -1624,11 +1634,24 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       st.row.classList.add('dragsrc');
       ghost = el('div', 'cq-ghost', st.text); document.body.appendChild(ghost);
       var z = zone(); z.hidden = false; z.classList.add('drop');
-      if (!settings.quick.length) { var sg = $('#cq-sugg'); sg.textContent = ''; sg.appendChild(el('div', 'cq-dropmsg', 'Déposez ici pour créer une action rapide')); }
+      ph = el('button', 'cq-pill drag cq-ph', st.text); ph.type = 'button';
       ensureAudio(); tone(520, 55, 0); tone(780, 70, 45); vibrate(15);
-      place(st.p);
+      place(st.p); scrollRaf = requestAnimationFrame(loop);
     }
-    function place(p) { if (ghost) { ghost.style.left = p.x + 'px'; ghost.style.top = p.y + 'px'; } zone().classList.toggle('over', inZone(p)); }
+    function place(p) {
+      if (ghost) { ghost.style.left = p.x + 'px'; ghost.style.top = Math.max(4, Math.min(p.y, zone().getBoundingClientRect().top + 90) - 6) + 'px'; }
+      var sg = $('#cq-sugg'), over = inZone(p);
+      zone().classList.toggle('over', over);
+      if (!over) { if (ph.parentNode) ph.remove(); st.idx = -1; return; }
+      var msg = sg.querySelector('.cq-dropmsg'); if (msg) msg.remove();
+      var n = idxAt(p.x), c = chips();
+      if (st.idx !== n || !ph.parentNode) {
+        var old = st.idx;
+        sg.insertBefore(ph, c[n] || null);
+        if (old >= 0 && old !== n) { pulse(c[n > old ? n - 1 : n], 700); vibrate(8); }
+        st.idx = n;
+      }
+    }
     function down(e) {
       if (st || (e.type === 'mousedown' && e.button !== 0)) return;
       var tg = e.target, row = tg.closest && tg.closest('.cq-row');
@@ -1637,7 +1660,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       if (!text) return;
       if (document.activeElement === inp && tg === inp) return;   /* en cours de saisie : on ne détourne pas le toucher */
       var p = point(e);
-      st = { row: row, text: text, on: false, sx: p.x, sy: p.y, p: p, timer: setTimeout(begin, 500) };
+      st = { row: row, text: text, on: false, sx: p.x, sy: p.y, p: p, idx: -1, timer: setTimeout(begin, 500) };
     }
     function move(e) {
       if (!st) return;
@@ -1651,19 +1674,21 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       clearTimeout(st.timer);
       var s = st; st = null;
       if (!s.on) return;
-      var hit = !cancel && inZone(s.p);
+      cancelAnimationFrame(scrollRaf);
+      var hit = !cancel && inZone(s.p), n = s.idx;
       s.row.classList.remove('dragsrc');
       if (ghost) { ghost.remove(); ghost = null; }
-      var z = zone(); z.classList.remove('drop', 'over');
+      if (ph) { ph.remove(); ph = null; }
+      zone().classList.remove('drop', 'over');
       cqDrag.recent = true; setTimeout(function () { cqDrag.recent = false; }, 350);
-      if (!hit) { buildQuick(); return; }
       var v = s.text;
+      if (!hit || n < 0) { buildQuick(); return; }
       if (settings.quick.some(function (x) { return x.toLowerCase() === v.toLowerCase(); })) { buildQuick(); toast('Cette action existe déjà dans les boutons rapides'); return; }
       if (settings.quick.length >= 40) { buildQuick(); toast('40 actions rapides au maximum'); return; }
-      commitQuick(settings.quick.concat(v));
-      var sgs = $('#cq-sugg'); sgs.scrollLeft = sgs.scrollWidth; zone().scrollLeft = zone().scrollWidth;   /* montre le nouveau bouton, à la fin */
-      tone(660, 70, 0); tone(990, 140, 80); vibrate([15, 40, 25]);
-      toast('« ' + v + ' » ajoutée aux actions rapides');
+      var q = settings.quick.slice(); q.splice(n, 0, v);
+      commitQuick(q);
+      ensureAudio(); tone(660, 70, 0); tone(990, 140, 80); vibrate([15, 40, 25]);
+      toast('« ' + v + ' » ajoutée en position ' + (n + 1) + ' des actions rapides');
     }
     host.addEventListener('touchstart', down, { passive: true });
     host.addEventListener('touchmove', move, { passive: false });
