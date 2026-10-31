@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031202357">
+<meta name="app-version" content="20261031203925">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1514,6 +1514,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   $('#cq-b-del').addEventListener('click', cqRemove);
   /* ---- glisser une série (appui prolongé puis déplacement) pour changer sa place ----
      Le programme d'actions de la série suit : on déplace l'entrée correspondante de draft.cues. */
+  /* la bulle d'un glisser-déposer ne passe jamais au-dessus de l'emplacement des boutons : elle reste sous la barre du haut (Annuler / Enregistrer) */
+  function bubTop(refTop, h) { var hd = $('.ed-head'), min = hd ? hd.getBoundingClientRect().bottom + 4 : 4; return Math.max(min, refTop - h) + 'px'; }
   var cqDrag = { on: false, i: 0, from: 0, node: null, timer: 0, sx: 0, sy: 0, x: 0, recent: false, raf: 0 };
   (function () {
     var ser = $('#cq-series');
@@ -1530,7 +1532,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       var r = ser.getBoundingClientRect(), w = 64;
       bub.textContent = 'S' + (edSet + 1);
       bub.style.left = Math.max(8, Math.min(innerWidth - w - 8, cqDrag.x - w / 2)) + 'px';
-      bub.style.top = Math.max(4, r.top - 62) + 'px';
+      bub.style.top = bubTop(r.top, 62);
     }
     function pulse(node, cls, ms) { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); setTimeout(function () { node.classList.remove(cls); }, ms); }
     function relabel() {
@@ -1638,7 +1640,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       place(st.p); scrollRaf = requestAnimationFrame(loop);
     }
     function place(p) {
-      if (ghost) { var gw = ghost.offsetWidth || 80; ghost.style.left = Math.max(8 + gw / 2, Math.min(innerWidth - 8 - gw / 2, p.x)) + 'px'; ghost.style.top = Math.max(4, zone().getBoundingClientRect().top - 58) + 'px'; }
+      if (ghost) { var gw = ghost.offsetWidth || 80; ghost.style.left = Math.max(8 + gw / 2, Math.min(innerWidth - 8 - gw / 2, p.x)) + 'px'; ghost.style.top = bubTop(zone().getBoundingClientRect().top, 58); }
       var sg = $('#cq-sugg'), over = inZone(p);
             if (!over) { if (ph.parentNode) ph.remove(); st.idx = -1; return; }
       var msg = sg.querySelector('.cq-dropmsg'); if (msg) msg.remove();
@@ -1719,7 +1721,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       var z = $('#cq-sugg-wrap').getBoundingClientRect(), w = bub.offsetWidth || 80;
       bub.textContent = d.node.textContent;
       bub.style.left = Math.max(8 + w / 2, Math.min(innerWidth - 8 - w / 2, d.x)) + 'px';
-      bub.style.top = Math.max(4, z.top - 58) + 'px';
+      bub.style.top = bubTop(z.top, 58);
     }
     function pulse(node, ms) { if (!node) return; node.classList.remove('shift'); void node.offsetWidth; node.classList.add('shift'); setTimeout(function () { node.classList.remove('shift'); }, ms); }
     function loop() {
