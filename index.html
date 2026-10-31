@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031204503">
+<meta name="app-version" content="20261031204839">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -678,7 +678,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 }
 
 /* ---- actions seconde par seconde : éditeur en tableau ---- */
-.cq-ghost { position: fixed; z-index: 60; padding: 8px 16px; border-radius: 10px; background: var(--accent); color: #000; pointer-events: none; font-size: 18px; font-weight: 600; max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 6px 18px rgba(0,0,0,.5); transform: translateX(-50%); }
+.cq-ghost { position: fixed; z-index: 60; padding: 6px 16px; border-radius: 10px; background: var(--accent); color: #000; pointer-events: none; font-size: 17px; font-weight: 600; max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 6px 18px rgba(0,0,0,.5); transform: translateX(-50%); }
 #cq-sugg-wrap.drop .cq-sugg { min-height: 40px; }
 .cq-dropmsg { color: var(--accent); font-size: 14px; padding: 8px 4px; }
 .cq-row.dragsrc { opacity: .5; }
@@ -1514,8 +1514,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   $('#cq-b-del').addEventListener('click', cqRemove);
   /* ---- glisser une série (appui prolongé puis déplacement) pour changer sa place ----
      Le programme d'actions de la série suit : on déplace l'entrée correspondante de draft.cues. */
-  /* la bulle d'un glisser-déposer reste toujours SOUS la barre des boutons : jamais plus haut que leur emplacement, et sans les cacher */
-  function bubTop(barTop, h, barBottom) { return (barBottom + 6) + 'px'; }
+  /* la bulle d'un glisser-déposer reste coincée à la hauteur de la barre : elle ne suit le doigt que de gauche à droite */
+  function pinTop(node, rect) { node.style.top = Math.round(rect.top + (rect.height - node.offsetHeight) / 2) + 'px'; }
   var cqDrag = { on: false, i: 0, from: 0, node: null, timer: 0, sx: 0, sy: 0, x: 0, recent: false, raf: 0 };
   (function () {
     var ser = $('#cq-series');
@@ -1532,7 +1532,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       var r = ser.getBoundingClientRect(), w = 64;
       bub.textContent = 'S' + (edSet + 1);
       bub.style.left = Math.max(8, Math.min(innerWidth - w - 8, cqDrag.x - w / 2)) + 'px';
-      bub.style.top = bubTop(r.top, 62, r.bottom);
+      pinTop(bub, r);
     }
     function pulse(node, cls, ms) { if (!node) return; node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); setTimeout(function () { node.classList.remove(cls); }, ms); }
     function relabel() {
@@ -1640,7 +1640,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       place(st.p); scrollRaf = requestAnimationFrame(loop);
     }
     function place(p) {
-      if (ghost) { var gw = ghost.offsetWidth || 80; ghost.style.left = Math.max(8 + gw / 2, Math.min(innerWidth - 8 - gw / 2, p.x)) + 'px'; ghost.style.top = bubTop(0, 58, zone().getBoundingClientRect().bottom); }
+      if (ghost) { var gw = ghost.offsetWidth || 80; ghost.style.left = Math.max(8 + gw / 2, Math.min(innerWidth - 8 - gw / 2, p.x)) + 'px'; pinTop(ghost, $('#cq-sugg').getBoundingClientRect()); }
       var sg = $('#cq-sugg'), over = inZone(p);
             if (!over) { if (ph.parentNode) ph.remove(); st.idx = -1; return; }
       var msg = sg.querySelector('.cq-dropmsg'); if (msg) msg.remove();
@@ -1721,7 +1721,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       var z = $('#cq-sugg-wrap').getBoundingClientRect(), w = bub.offsetWidth || 80;
       bub.textContent = d.node.textContent;
       bub.style.left = Math.max(8 + w / 2, Math.min(innerWidth - 8 - w / 2, d.x)) + 'px';
-      bub.style.top = bubTop(z.top, 58, z.bottom);
+      pinTop(bub, sg.getBoundingClientRect());
     }
     function pulse(node, ms) { if (!node) return; node.classList.remove('shift'); void node.offsetWidth; node.classList.add('shift'); setTimeout(function () { node.classList.remove('shift'); }, ms); }
     function loop() {
