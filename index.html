@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031010921">
+<meta name="app-version" content="20261031142704">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -968,12 +968,41 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   function save(k, v) { mem[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+  /* programmes de 30 minutes (Body Combat, CrossFit) : une seule séance de 1 800 s, chaque étape est une action annoncée à la seconde exacte */
+  function cuesFrom(list) {
+    var m = {};
+    list.forEach(function (r) { var p = r[0].split(':'); m[parseInt(p[0], 10) * 60 + parseInt(p[1], 10) + 1] = r[1]; });
+    return m;
+  }
+  function seedBodyCombat() {
+    return { id: 'seed-bodycombat', name: 'Body Combat 30 min', prep: 0, work: 1800, rest: 0, sets: 1, cycles: 1, cycleRest: 0, cool: 0, cuesSame: true, cuesOn: true, cues: [cuesFrom([
+      ['00:00', 'Échauffement : marche et jogging'], ['01:00', 'Jumping jacks'], ['02:00', 'Montées de genoux'], ['03:00', 'Squats + rotations des bras'], ['04:00', 'Shadow boxing léger'],
+      ['05:00', 'Boxe : jab / cross rapides'], ['05:45', 'Récupération active'], ['06:00', 'Hooks alternés'], ['06:45', 'Récupération active'], ['07:00', 'Uppercuts'], ['07:45', 'Récupération active'],
+      ['08:00', 'Jab / cross / hook'], ['08:45', 'Récupération active'], ['09:00', 'Enchaînements libres'], ['10:00', 'Boxe rapide'], ['10:30', 'Boxe légère'], ['11:00', 'Jab / cross explosifs'],
+      ['12:00', 'Kickboxing : front kicks alternés'], ['13:00', 'Récupération active'], ['13:30', 'Knee strikes alternés'], ['14:30', 'Récupération active'], ['15:00', 'Side kicks alternés'], ['16:00', 'Récupération active'],
+      ['16:30', 'Jab / cross / front kick'], ['17:30', 'Récupération active'], ['18:00', 'Enchaînement libre bras et jambes'],
+      ['19:00', 'Cardio : jumping jacks'], ['20:00', 'Repos'], ['20:15', 'Squat + punch'], ['21:00', 'Repos'], ['21:15', 'Mountain climbers'], ['22:00', 'Repos'], ['22:15', 'Burpees'], ['23:00', 'Repos'],
+      ['23:15', 'High knees'], ['24:00', 'Repos'], ['24:15', 'Squat jumps'], ['25:00', 'Repos'], ['25:15', 'Shadow boxing rapide'],
+      ['26:00', 'Retour au calme : marche lente'], ['27:00', 'Étirement des quadriceps'], ['28:00', 'Étirement épaules et bras'], ['29:00', 'Étirement mollets, respiration']
+    ])] };
+  }
+  function seedCrossfit() {
+    return { id: 'seed-crossfit', name: 'CrossFit 30 min', prep: 0, work: 1800, rest: 0, sets: 1, cycles: 1, cycleRest: 0, cool: 0, cuesSame: true, cuesOn: true, cues: [cuesFrom([
+      ['00:00', 'Échauffement : jumping jacks'], ['01:00', 'Air squats'], ['02:00', 'Fentes alternées'], ['03:00', 'Mountain climbers'], ['04:00', 'Pompes + mobilité des épaules'],
+      ['05:00', 'Préparation : air squats contrôlés'], ['06:00', 'Kettlebell deadlift léger'], ['07:00', 'Pompes contrôlées'], ['08:00', 'Gainage planche'], ['09:00', 'Récupération, prépare le WOD'],
+      ['10:00', 'AMRAP 15 min : 15 squats, 10 pompes'], ['10:06', '12 swings, 20 climbers, 12 step-ups'], ['15:00', 'AMRAP : encore 10 minutes'], ['20:00', 'AMRAP : encore 5 minutes'], ['24:00', 'AMRAP : dernière minute'],
+      ['25:00', 'Finisher : burpees'], ['25:30', 'Gainage planche'], ['26:00', 'Burpees'], ['26:30', 'Gainage planche'],
+      ['27:00', 'Retour au calme : étirement des jambes'], ['28:00', 'Étirement épaules et dos'], ['29:00', 'Respiration et récupération']
+    ])] };
+  }
   var SEEDS = function () {
     return [
       { id: uid(), name: 'HIIT 40/20', prep: 10, work: 40, rest: 20, sets: 10, cycles: 1, cycleRest: 0, cool: 60 },
       { id: uid(), name: 'Circuit training', prep: 15, work: 45, rest: 15, sets: 6, cycles: 3, cycleRest: 90, cool: 120 },
       { id: uid(), name: 'Gainage', prep: 5, work: 45, rest: 15, sets: 5, cycles: 1, cycleRest: 0, cool: 0 },
-      { id: uid(), name: 'Boxe 3 min', prep: 10, work: 180, rest: 60, sets: 6, cycles: 1, cycleRest: 0, cool: 0 }
+      { id: uid(), name: 'Boxe 3 min', prep: 10, work: 180, rest: 60, sets: 6, cycles: 1, cycleRest: 0, cool: 0 },
+      seedBodyCombat(),
+      seedCrossfit()
     ];
   };
   var DEFAULTS = { sound: true, volume: 0.7, countdown: 3, voice: false, vibrate: true, wake: true, theme: 'dark', alert: 'gong', mix: true, quickOn: true, voiceEn: false };
@@ -985,6 +1014,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
                (w.name === 'Pomodoro' && w.work === 1500 && w.rest === 300 && w.sets === 4));
     });
     save('tempo.workouts', workouts); save('tempo.noTabata', true);
+  }
+  /* une seule fois : ajoute les deux programmes de 30 minutes aux minuteurs déjà présents */
+  if (!load('tempo.seed30', false)) {
+    [seedBodyCombat(), seedCrossfit()].forEach(function (n) { if (!workouts.some(function (w) { return w.id === n.id; })) workouts.push(n); });
+    save('tempo.workouts', workouts); save('tempo.seed30', true);
   }
   var QUICK_DEFAULT = ['Jab', 'Direct', 'Crochet', 'Uppercut', 'Esquive', 'Garde', 'Double jab', 'Jab / direct', 'Jab / crochet'];
   var settings = Object.assign({}, DEFAULTS, load('tempo.settings', {}));
