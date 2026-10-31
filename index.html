@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031204839">
+<meta name="app-version" content="20261031205350">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1617,6 +1617,13 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   (function () {
     var host = $('#cq-table'), st = null, ghost = null, ph = null, scrollRaf = 0;
     function zone() { return $('#cq-sugg-wrap'); }
+    /* iPhone : maintenir un champ de saisie ouvre le clavier et fait défiler la page. Pendant l'appui, le champ est en lecture seule ; un simple toucher le rend de nouveau modifiable. */
+    function lockIn(inp) { inp.readOnly = true; inp.style.webkitUserSelect = 'none'; inp.style.userSelect = 'none'; }
+    function relIn(inp) { setTimeout(function () { inp.readOnly = false; inp.style.webkitUserSelect = ''; inp.style.userSelect = ''; }, 450); }
+    host.addEventListener('click', function (e) {
+      var t = e.target;
+      if (t.classList && t.classList.contains('cq-in') && t.readOnly) { t.readOnly = false; t.style.webkitUserSelect = ''; t.style.userSelect = ''; try { t.focus(); } catch (x) {} }
+    });
     function point(e) { var t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e; return { x: t.clientX, y: t.clientY }; }
     function inZone(p) { var r = zone().getBoundingClientRect(), m = st && st.idx >= 0 ? 70 : 24; return p.x >= r.left - 12 && p.x <= r.right + 12 && p.y >= r.top && p.y <= r.bottom + m; }   /* marge plus large une fois entré : on ne perd pas la zone au moindre écart */
     function chips() { return Array.prototype.filter.call($('#cq-sugg').children, function (c) { return c !== ph && c.classList.contains('cq-pill'); }); }
@@ -1666,12 +1673,13 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       if (!text) return;
       if (document.activeElement === inp && tg === inp) return;   /* en cours de saisie : on ne détourne pas le toucher */
       var p = point(e);
-      st = { row: row, text: text, on: false, sx: p.x, sy: p.y, p: p, idx: -1, timer: setTimeout(begin, 380) };
+      st = { row: row, text: text, on: false, sx: p.x, sy: p.y, p: p, idx: -1, inp: (e.touches && tg === inp) ? inp : null, timer: setTimeout(begin, 380) };
+      if (st.inp) lockIn(st.inp);
     }
     function move(e) {
       if (!st) return;
       var p = point(e); st.p = p;
-      if (!st.on) { if (Math.abs(p.x - st.sx) > 8 || Math.abs(p.y - st.sy) > 8) { clearTimeout(st.timer); st = null; } return; }
+      if (!st.on) { if (Math.abs(p.x - st.sx) > 8 || Math.abs(p.y - st.sy) > 8) { clearTimeout(st.timer); if (st.inp) relIn(st.inp); st = null; } return; }
       if (e.cancelable) e.preventDefault();
       place(p);
     }
@@ -1679,6 +1687,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       if (!st) return;
       clearTimeout(st.timer);
       var s = st; st = null;
+      if (s.inp) relIn(s.inp);
       if (!s.on) return;
       cancelAnimationFrame(scrollRaf);
       var hit = !cancel && inZone(s.p), n = s.idx;
