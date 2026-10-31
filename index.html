@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031200910">
+<meta name="app-version" content="20261031202008">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -679,8 +679,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
 
 /* ---- actions seconde par seconde : éditeur en tableau ---- */
 .cq-ghost { position: fixed; z-index: 60; padding: 8px 16px; border-radius: 10px; background: var(--accent); color: #000; pointer-events: none; font-size: 18px; font-weight: 600; max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 6px 18px rgba(0,0,0,.5); transform: translateX(-50%); }
-#cq-sugg-wrap.drop .cq-sugg { outline: 2px dashed var(--accent); outline-offset: 3px; border-radius: 12px; min-height: 40px; }
-#cq-sugg-wrap.over .cq-sugg { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+#cq-sugg-wrap.drop .cq-sugg { min-height: 40px; }
 .cq-dropmsg { color: var(--accent); font-size: 14px; padding: 8px 4px; }
 .cq-row.dragsrc { opacity: .5; }
 .cq-pad { padding: 10px 12px 0; }
@@ -1617,7 +1616,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     var host = $('#cq-table'), st = null, ghost = null, ph = null, scrollRaf = 0;
     function zone() { return $('#cq-sugg-wrap'); }
     function point(e) { var t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e; return { x: t.clientX, y: t.clientY }; }
-    function inZone(p) { var r = zone().getBoundingClientRect(); return p.x >= r.left - 12 && p.x <= r.right + 12 && p.y >= r.top - 18 && p.y <= r.bottom + 18; }
+    function inZone(p) { var r = zone().getBoundingClientRect(), m = st && st.idx >= 0 ? 70 : 24; return p.x >= r.left - 12 && p.x <= r.right + 12 && p.y >= r.top - m && p.y <= r.bottom + m; }   /* marge plus large une fois entré : on ne perd pas la zone au moindre écart */
     function chips() { return Array.prototype.filter.call($('#cq-sugg').children, function (c) { return c !== ph && c.classList.contains('cq-pill'); }); }
     function pulse(node, ms) { if (!node) return; node.classList.remove('shift'); void node.offsetWidth; node.classList.add('shift'); setTimeout(function () { node.classList.remove('shift'); }, ms); }
     function idxAt(x) { var c = chips(), n = 0; for (var i = 0; i < c.length; i++) { var r = c[i].getBoundingClientRect(); if (x > r.left + r.width / 2) n = i + 1; } return n; }
@@ -1639,12 +1638,17 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       place(st.p); scrollRaf = requestAnimationFrame(loop);
     }
     function place(p) {
-      if (ghost) { ghost.style.left = p.x + 'px'; ghost.style.top = Math.max(4, Math.min(p.y, zone().getBoundingClientRect().top + 90) - 6) + 'px'; }
+      if (ghost) { var gw = ghost.offsetWidth || 80; ghost.style.left = Math.max(8 + gw / 2, Math.min(innerWidth - 8 - gw / 2, p.x)) + 'px'; ghost.style.top = Math.max(4, zone().getBoundingClientRect().top - 58) + 'px'; }
       var sg = $('#cq-sugg'), over = inZone(p);
-      zone().classList.toggle('over', over);
-      if (!over) { if (ph.parentNode) ph.remove(); st.idx = -1; return; }
+            if (!over) { if (ph.parentNode) ph.remove(); st.idx = -1; return; }
       var msg = sg.querySelector('.cq-dropmsg'); if (msg) msg.remove();
-      var n = idxAt(p.x), c = chips();
+      var c = chips(), n = st.idx;
+      if (n >= 0 && ph.parentNode) {
+        /* le doigt est encore sur l'emplacement courant : rien ne bouge (évite les va-et-vient) */
+        var pr = ph.getBoundingClientRect(), pc = pr.left + pr.width / 2, half = ph.offsetWidth / 2;
+        if (Math.abs(p.x - pc) <= half) return;
+      }
+      n = idxAt(p.x);
       if (st.idx !== n || !ph.parentNode) {
         var old = st.idx;
         sg.insertBefore(ph, c[n] || null);
@@ -1660,7 +1664,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       if (!text) return;
       if (document.activeElement === inp && tg === inp) return;   /* en cours de saisie : on ne détourne pas le toucher */
       var p = point(e);
-      st = { row: row, text: text, on: false, sx: p.x, sy: p.y, p: p, idx: -1, timer: setTimeout(begin, 500) };
+      st = { row: row, text: text, on: false, sx: p.x, sy: p.y, p: p, idx: -1, timer: setTimeout(begin, 380) };
     }
     function move(e) {
       if (!st) return;
