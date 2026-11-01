@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261101083719">
+<meta name="app-version" content="20261101085005">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2164,6 +2164,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     ],
     dial: [
       { sel: '#d-mode', pre: function () { clickMode('timer'); }, title: 'Deux outils', text: 'Choisissez « Minuteur » pour un compte à rebours, ou « Chronomètre » pour mesurer un temps écoulé.' },
+      { sel: '#d-svg', title: 'Régler l’aiguille', text: 'Touchez le cadran à l’endroit voulu pour placer l’aiguille. Pour l’ajuster, maintenez le doigt une demi-seconde puis glissez. Un simple balayage de page ne change rien.' },
       { sel: '#d-pill', title: 'Régler la durée', text: 'Touchez l’affichage du temps pour saisir une durée au clavier numérique.' },
       { sel: '#d-timer .dial-ctrl', title: 'Démarrer', text: 'Lancez le minuteur, mettez-le en pause ou remettez-le à zéro avec ces boutons.' },
       { sel: '#sw-toggle', pre: function () { clickMode('sw'); }, title: 'Chronomètre', text: 'Démarrer lance le chronomètre. L’aiguille du grand cadran indique les secondes.' },
@@ -3097,7 +3098,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     $('#d-ico').innerHTML = running ? ICO_PAUSE : ICO_PLAY;
     $('#d-toggle').setAttribute('aria-label', running ? 'Pause' : (dial.state === 'paused' ? 'Reprendre' : 'Démarrer'));
     $('#d-reset').hidden = dial.state === 'idle';
-    $('#d-sub').textContent = { idle: 'Glissez le cadran ou touchez le temps', running: 'En cours', paused: 'En pause', done: 'Terminé' }[dial.state];
+    $('#d-sub').textContent = { idle: 'Touchez le cadran ou touchez le temps', running: 'En cours', paused: 'En pause', done: 'Terminé' }[dial.state];
   }
   function setDialSec(sec) {
     sec = Math.min(5999, Math.max(1, Math.round(sec)));
@@ -3164,14 +3165,32 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     if (m === 0 || m === 60 || Math.abs(m - cur) > 30) m = cur > 30 ? 60 : 1;
     if (m !== cur || dial.sec % 60) { if (m !== cur) { ensureAudio(); wheelClick(); } setDialSec(m * 60); }
   }
+  /* Un simple toucher place l'aiguille. Pour la faire glisser, il faut maintenir ~0,35 s sans bouger : un balayage de page qui passe sur le cadran ne change donc plus la durée. */
+  var dg = null;
   dsvg.addEventListener('pointerdown', function (e) {
     if (dial.state !== 'idle') return;
-    ensureAudio();
-    dragging = true; try { dsvg.setPointerCapture(e.pointerId); } catch (x) {}
-    dialFromPointer(e);
+    if (dg) return;
+    dg = { id: e.pointerId, x: e.clientX, y: e.clientY, armed: false, moved: false, ev: e, timer: 0 };
+    dg.timer = setTimeout(function () {
+      if (!dg || dg.moved) return;
+      dg.armed = true; vibrate(15);
+      try { dsvg.setPointerCapture(dg.id); } catch (x) {}
+      ensureAudio(); tone(520, 55, 0); tone(780, 70, 45);
+    }, 350);
   });
-  dsvg.addEventListener('pointermove', function (e) { if (dragging) dialFromPointer(e); });
-  ['pointerup', 'pointercancel'].forEach(function (ev) { dsvg.addEventListener(ev, function () { dragging = false; }); });
+  dsvg.addEventListener('pointermove', function (e) {
+    if (!dg || e.pointerId !== dg.id) return;
+    if (dg.armed) { dragging = true; dialFromPointer(e); return; }
+    if (Math.abs(e.clientX - dg.x) > 10 || Math.abs(e.clientY - dg.y) > 10) { dg.moved = true; clearTimeout(dg.timer); }
+  });
+  dsvg.addEventListener('pointerup', function (e) {
+    if (!dg || e.pointerId !== dg.id) return;
+    clearTimeout(dg.timer);
+    var tap = !dg.armed && !dg.moved;
+    dg = null; dragging = false;
+    if (tap && dial.state === 'idle') { ensureAudio(); dialFromPointer(e); }
+  });
+  dsvg.addEventListener('pointercancel', function () { if (dg) clearTimeout(dg.timer); dg = null; dragging = false; });
   dsvg.addEventListener('keydown', function (e) {
     if (dial.state !== 'idle') return;
     if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { e.preventDefault(); ensureAudio(); wheelClick(); setDialSec(Math.min(3600, dial.sec + 60)); }
