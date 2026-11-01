@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261031205350">
+<meta name="app-version" content="20261101083719">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -2296,6 +2296,15 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       }
     } catch (e) {}
   }
+  /* iPhone : le moteur audio ne se débloque que pendant un geste de l'utilisateur (touchstart / touchend / clic), jamais dans un minuteur interne (ex. le maintien d'un glisser-déposer).
+     On le débloque donc dès les premiers toucher de l'écran, jusqu'à ce qu'il tourne : les sons des glisser-déposer fonctionnent dès l'ouverture. */
+  ['touchstart', 'touchend', 'pointerup', 'click'].forEach(function (ev) {
+    document.addEventListener(ev, function () {
+      if (SOFT || !settings.sound) return;
+      if (actx && actx.state === 'running') return;
+      ensureAudio();
+    }, { passive: true, capture: true });
+  });
   var master = null;
   function masterOut() {
     if (!master && actx) {
