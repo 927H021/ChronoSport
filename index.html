@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261101195301">
+<meta name="app-version" content="20261102202158">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1037,6 +1037,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   var QUICK_DEFAULT = ['Jab', 'Direct', 'Crochet', 'Uppercut', 'Esquive', 'Garde', 'Double jab', 'Jab / direct', 'Jab / crochet'];
   var settings = Object.assign({}, DEFAULTS, load('tempo.settings', {}));
+  /* sons d'alerte remplacés : l'ancien choix est remplacé par le nouveau son le plus proche */
+  (function () { var map = { horn: 'corne', watch: 'grillons', marimba: 'clochette', synth: 'pilates' }; if (map[settings.alert]) { settings.alert = map[settings.alert]; save('tempo.settings', settings); } })();
   /* l'option s'appelle désormais « Équilibrer voix et musique », activée par défaut (mix = false) */
   if (settings.mixV !== 2) { settings.mix = false; settings.mixV = 2; save('tempo.settings', settings); }
   /* iOS : l'option « Équilibrer voix et musique » n'a aucun effet (le système décide) : elle est masquée et les sons se mélangent à la musique */
@@ -2316,8 +2318,8 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   }
   /* ---------- alert sounds ---------- */
   var SOUND_LIST = [
-    ['gong', 'Gong'], ['ring', 'Ring de boxe'], ['horn', 'Klaxon de stade'], ['whistle', 'Sifflet de coach'],
-    ['watch', 'Montre sport'], ['marimba', 'Marimba'], ['synth', 'Synthwave']
+    ['gong', 'Gong'], ['ring', 'Ring de boxe'], ['whistle', 'Sifflet de coach'],
+    ['clochette', 'Clochette'], ['grillons', 'Grillons'], ['corne', 'Corne'], ['pilates', 'Bol tibétain (Pilates)']
   ];
   /* helpers: all take an absolute start time t and push every source into nodes so a scheduled alarm can be cancelled */
   function env(g, t, peak, atk, hold, rel) {
@@ -2389,9 +2391,25 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     note({ type: 'sine', f: 5700, t: t, atk: 0.015, hold: dur, rel: 0.04, peak: gain * 0.25, out: out, nodes: nodes, vib: [34, 260] });
     noiseBurst(t, dur + 0.04, gain * 0.35, 3200, out, nodes, true);
   }
-  function horn(t, dur, gain, out, nodes) {
-    [[233, 0], [293.7, 6], [349.2, -5], [466, 3]].forEach(function (n) {
-      note({ type: 'sawtooth', f: n[0], f2: n[0] * 1.0, t: t, atk: 0.02, hold: dur, rel: 0.12, peak: gain * 0.5, out: out, nodes: nodes, filter: 1600, detune: n[1] });
+  /* corne : cuivre chaud, attaque douce, léger glissando vers la note */
+  function cor(t, dur, gain, out, nodes) {
+    [[196, 0], [294, 5], [392, -4]].forEach(function (n) {
+      note({ type: 'sawtooth', f: n[0] * 0.94, f2: n[0], t: t, atk: 0.09, hold: dur, rel: 0.28, peak: gain * 0.5, out: out, nodes: nodes, filter: 1100, detune: n[1], vib: [5.5, 2.5] });
+    });
+  }
+  /* grillons : petite série d'impulsions aiguës */
+  function cricket(t, gain, out, nodes) {
+    for (var i = 0; i < 4; i++) {
+      note({ type: 'sine', f: 4300, t: t + i * 0.045, atk: 0.004, hold: 0.02, rel: 0.012, peak: gain * 0.55, out: out, nodes: nodes });
+      note({ type: 'sine', f: 4350, t: t + i * 0.045, atk: 0.004, hold: 0.02, rel: 0.012, peak: gain * 0.3, out: out, nodes: nodes });
+    }
+  }
+  /* bol tibétain (ambiance Pilates) : sons purs qui battent doucement et s'éteignent lentement */
+  function bowl(t, f, d, lv, gain, out, nodes) {
+    [[1, 1, 1], [2.76, .42, .65], [5.4, .18, .4]].forEach(function (pt) {
+      [0, 1.6].forEach(function (db, k) {
+        note({ type: 'sine', f: f * pt[0] + db, t: t, atk: 0.02, hold: 0, rel: d * pt[2], peak: gain * lv * pt[1] * (k ? .7 : 1), out: out, nodes: nodes });
+      });
     });
   }
   /* each sound plays one event ('go', 'setEnd', 'end', 'minute') starting at t */
@@ -2409,45 +2427,39 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       else if (k === 'end') [0, .24, .48, .72, .96, 1.2].forEach(function (d, i) { bellStrike(t + d, 1040, i === 5 ? 3 : 1.2, 1, g, out, n); });
       else bellStrike(t, 1040, .8, .5, g, out, n);
     },
-    horn: function (k, t, g, out, n) {
-      g *= 0.9;
-      if (k === 'go') horn(t, .32, g, out, n);
-      else if (k === 'setEnd') horn(t, .95, g, out, n);
-      else if (k === 'end') { horn(t, .45, g, out, n); horn(t + .7, 1.5, g, out, n); }
-      else horn(t, .12, g * .5, out, n);
-    },
     whistle: function (k, t, g, out, n) {
       if (k === 'go') whistle(t, .28, g, out, n);
       else if (k === 'setEnd') { whistle(t, .2, g, out, n); whistle(t + .32, .2, g, out, n); whistle(t + .64, .75, g, out, n); }
       else if (k === 'end') { whistle(t, .25, g, out, n); whistle(t + .4, .25, g, out, n); whistle(t + .8, 1.1, g, out, n); }
       else whistle(t, .1, g * .6, out, n);
     },
-    watch: function (k, t, g, out, n) {
-      function b(d, f, len) { note({ type: 'triangle', f: f, t: t + d, atk: 0.004, hold: len, rel: 0.03, peak: g * 0.9, out: out, nodes: n }); note({ type: 'sine', f: f * 2, t: t + d, atk: 0.004, hold: len, rel: 0.03, peak: g * 0.25, out: out, nodes: n }); }
-      if (k === 'go') { b(0, 1760, .09); b(.16, 1760, .09); }
-      else if (k === 'setEnd') { b(0, 1568, .12); b(.2, 1976, .12); b(.4, 2349, .3); }
-      else if (k === 'end') { b(0, 1568, .12); b(.2, 1976, .12); b(.4, 2349, .12); b(.6, 1976, .12); b(.8, 2349, .12); b(1.0, 2637, .55); }
-      else b(0, 1568, .06);
+    clochette: function (k, t, g, out, n) {
+      g *= 0.7;
+      function c(d, f, len) { bellStrike(t + d, f, len, 1, g, out, n); }
+      if (k === 'go') { c(0, 2093, .8); c(.13, 2637, 1.0); }
+      else if (k === 'setEnd') { c(0, 1976, .6); c(.14, 2349, .6); c(.28, 2794, 1.3); }
+      else if (k === 'end') { [0, .12, .24, .36, .48, .6, .72].forEach(function (d, i) { c(d, i % 2 ? 2637 : 2093, i === 6 ? 2 : .5); }); }
+      else bellStrike(t, 2349, .5, .5, g, out, n);
     },
-    marimba: function (k, t, g, out, n) {
-      function m(d, f, len) {
-        note({ type: 'sine', f: f, t: t + d, atk: 0.003, hold: 0, rel: len, peak: g * 0.9, out: out, nodes: n });
-        note({ type: 'sine', f: f * 4, t: t + d, atk: 0.002, hold: 0, rel: len * .18, peak: g * 0.35, out: out, nodes: n });
-      }
-      if (k === 'go') { m(0, 784, .5); m(.14, 1047, .6); }
-      else if (k === 'setEnd') { m(0, 659, .55); m(.15, 784, .55); m(.3, 988, .55); m(.45, 1319, 1.1); }
-      else if (k === 'end') { [523, 659, 784, 1047, 1319, 1047, 1319, 1568].forEach(function (f, i) { m(i * .14, f, i === 7 ? 1.8 : .6); }); }
-      else m(0, 784, .4);
+    grillons: function (k, t, g, out, n) {
+      if (k === 'go') { cricket(t, g, out, n); cricket(t + .26, g, out, n); }
+      else if (k === 'setEnd') { [0, .26, .52].forEach(function (d) { cricket(t + d, g, out, n); }); }
+      else if (k === 'end') { for (var i = 0; i < 8; i++) cricket(t + i * .26, g, out, n); }
+      else cricket(t, g * .6, out, n);
     },
-    synth: function (k, t, g, out, n) {
-      function s(d, f, len, last) {
-        note({ type: 'sawtooth', f: f, t: t + d, atk: 0.008, hold: len, rel: last ? .5 : .08, peak: g * 0.55, out: out, nodes: n, filter: 2600, detune: -7 });
-        note({ type: 'square', f: f * 2, t: t + d, atk: 0.008, hold: len, rel: last ? .5 : .08, peak: g * 0.18, out: out, nodes: n, filter: 3200, detune: 7 });
-      }
-      if (k === 'go') { s(0, 440, .09); s(.11, 659, .16, true); }
-      else if (k === 'setEnd') { s(0, 440, .1); s(.12, 523, .1); s(.24, 659, .1); s(.36, 880, .45, true); }
-      else if (k === 'end') { [440, 523, 659, 880, 659, 880, 1047].forEach(function (f, i) { s(i * .12, f, .1); }); s(.9, 1319, .8, true); s(.9, 880, .8, true); }
-      else s(0, 880, .06);
+    corne: function (k, t, g, out, n) {
+      g *= 0.9;
+      if (k === 'go') cor(t, .45, g, out, n);
+      else if (k === 'setEnd') { cor(t, .4, g, out, n); cor(t + .75, 1.0, g, out, n); }
+      else if (k === 'end') { cor(t, .4, g, out, n); cor(t + .75, .4, g, out, n); cor(t + 1.5, 1.8, g, out, n); }
+      else cor(t, .15, g * .5, out, n);
+    },
+    pilates: function (k, t, g, out, n) {
+      g *= 0.6;
+      if (k === 'go') bowl(t, 392, 2.6, 1, g, out, n);
+      else if (k === 'setEnd') { bowl(t, 349, 2.2, 1, g, out, n); bowl(t + .9, 440, 3.2, 1, g, out, n); }
+      else if (k === 'end') { bowl(t, 330, 2.4, 1, g, out, n); bowl(t + 1.1, 392, 2.6, 1, g, out, n); bowl(t + 2.2, 494, 4.2, 1, g, out, n); }
+      else bowl(t, 440, 1.2, .5, g, out, n);
     }
   };
   function alertSoundHW(kind, delaySec, forceKind) {
