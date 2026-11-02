@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="app-version" content="20261102202158">
+<meta name="app-version" content="20261102202503">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0a0b0d">
 <meta name="mobile-web-app-capable" content="yes">
@@ -1038,7 +1038,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   var QUICK_DEFAULT = ['Jab', 'Direct', 'Crochet', 'Uppercut', 'Esquive', 'Garde', 'Double jab', 'Jab / direct', 'Jab / crochet'];
   var settings = Object.assign({}, DEFAULTS, load('tempo.settings', {}));
   /* sons d'alerte remplacés : l'ancien choix est remplacé par le nouveau son le plus proche */
-  (function () { var map = { horn: 'corne', watch: 'grillons', marimba: 'clochette', synth: 'pilates' }; if (map[settings.alert]) { settings.alert = map[settings.alert]; save('tempo.settings', settings); } })();
+  (function () { var map = { horn: 'bois', corne: 'bois', watch: 'grillons', marimba: 'clochette', synth: 'pilates' }; if (map[settings.alert]) { settings.alert = map[settings.alert]; save('tempo.settings', settings); } })();
   /* l'option s'appelle désormais « Équilibrer voix et musique », activée par défaut (mix = false) */
   if (settings.mixV !== 2) { settings.mix = false; settings.mixV = 2; save('tempo.settings', settings); }
   /* iOS : l'option « Équilibrer voix et musique » n'a aucun effet (le système décide) : elle est masquée et les sons se mélangent à la musique */
@@ -2319,7 +2319,7 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
   /* ---------- alert sounds ---------- */
   var SOUND_LIST = [
     ['gong', 'Gong'], ['ring', 'Ring de boxe'], ['whistle', 'Sifflet de coach'],
-    ['clochette', 'Clochette'], ['grillons', 'Grillons'], ['corne', 'Corne'], ['pilates', 'Bol tibétain (Pilates)']
+    ['clochette', 'Clochette'], ['grillons', 'Grillons'], ['bois', 'Bloc de bois'], ['pilates', 'Bol tibétain (Pilates)']
   ];
   /* helpers: all take an absolute start time t and push every source into nodes so a scheduled alarm can be cancelled */
   function env(g, t, peak, atk, hold, rel) {
@@ -2391,11 +2391,11 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
     note({ type: 'sine', f: 5700, t: t, atk: 0.015, hold: dur, rel: 0.04, peak: gain * 0.25, out: out, nodes: nodes, vib: [34, 260] });
     noiseBurst(t, dur + 0.04, gain * 0.35, 3200, out, nodes, true);
   }
-  /* corne : cuivre chaud, attaque douce, léger glissando vers la note */
-  function cor(t, dur, gain, out, nodes) {
-    [[196, 0], [294, 5], [392, -4]].forEach(function (n) {
-      note({ type: 'sawtooth', f: n[0] * 0.94, f2: n[0], t: t, atk: 0.09, hold: dur, rel: 0.28, peak: gain * 0.5, out: out, nodes: nodes, filter: 1100, detune: n[1], vib: [5.5, 2.5] });
-    });
+  /* bloc de bois : claquement sec et boisé, la hauteur retombe très vite */
+  function wood(t, f, gain, out, nodes) {
+    note({ type: 'sine', f: f * 1.6, f2: f, t: t, atk: 0.002, hold: 0.012, rel: 0.11, peak: gain * 0.9, out: out, nodes: nodes });
+    note({ type: 'triangle', f: f * 2.4, f2: f * 1.9, t: t, atk: 0.002, hold: 0.006, rel: 0.05, peak: gain * 0.35, out: out, nodes: nodes });
+    noiseBurst(t, 0.03, gain * 0.3, 1800, out, nodes, true);
   }
   /* grillons : petite série d'impulsions aiguës */
   function cricket(t, gain, out, nodes) {
@@ -2447,12 +2447,13 @@ tspan.wm-s { fill: var(--accent); stroke: #0b0c0e; stroke-width: 2.6; paint-orde
       else if (k === 'end') { for (var i = 0; i < 8; i++) cricket(t + i * .26, g, out, n); }
       else cricket(t, g * .6, out, n);
     },
-    corne: function (k, t, g, out, n) {
+    bois: function (k, t, g, out, n) {
       g *= 0.9;
-      if (k === 'go') cor(t, .45, g, out, n);
-      else if (k === 'setEnd') { cor(t, .4, g, out, n); cor(t + .75, 1.0, g, out, n); }
-      else if (k === 'end') { cor(t, .4, g, out, n); cor(t + .75, .4, g, out, n); cor(t + 1.5, 1.8, g, out, n); }
-      else cor(t, .15, g * .5, out, n);
+      function w(d, f) { wood(t + d, f, g, out, n); }
+      if (k === 'go') { w(0, 880); w(.16, 880); }
+      else if (k === 'setEnd') { w(0, 740); w(.18, 880); w(.36, 1100); }
+      else if (k === 'end') { [0, .14, .28, .42, .56, .7].forEach(function (d, i) { w(d, i === 5 ? 1320 : 880 + i * 60); }); }
+      else wood(t, 880, g * .6, out, n);
     },
     pilates: function (k, t, g, out, n) {
       g *= 0.6;
